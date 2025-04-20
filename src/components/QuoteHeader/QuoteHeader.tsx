@@ -107,7 +107,7 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
         console.log('Fetching sites for client ID:', selectedClient.id);
 
         // Build the API URL for direct fetch (matching ClientsPage pattern)
-        const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+        const API_BASE_URL ='http://localhost:3001/api';
         const sitesUrl = `${API_BASE_URL}/sites/by-client?clientId=${selectedClient.id}`;
         console.log('Sending request to:', sitesUrl);
 

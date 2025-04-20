@@ -67,11 +67,13 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
   // Load all necessary data from API
   const loadData = async () => {
     try {
+      console.log('Loading quotes and clients...');
       const [allQuotes, allClients] = await Promise.all([
         apiService.getQuotes(),
         apiService.getClients()
       ]);
 
+      console.log(`Loaded ${allQuotes.length} quotes and ${allClients.length} clients`);
 
       // Group quotes by base ID to identify versions
       const versionGroups: { [baseId: string]: Quote[] } = {};
@@ -86,6 +88,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
         }
       });
 
+      console.log(`Found ${Object.keys(versionGroups).length} quote groups`);
 
       // Sort each group by version
       Object.keys(versionGroups).forEach(baseId => {
@@ -100,10 +103,9 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
       setQuotes(allQuotes);
       setClients(allClients);
       setFilteredQuotes(allQuotes);
-      console.log('=== History Page Data Loaded ===');
     } catch (error) {
-      console.error('Error loading history data:', error);
-      alert('Erreur lors du chargement des données');
+      console.error('Error loading data:', error);
+      // You might want to show an error message to the user here
     }
   };
 

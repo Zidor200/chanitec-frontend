@@ -16,8 +16,8 @@ import {
 import { generateId, generateQuoteId, extractBaseId, extractVersion, getNextVersion } from '../utils/id-generator';
 
 // Default values
-const DEFAULT_EXCHANGE_RATE = 1.15;
-const DEFAULT_MARGIN_RATE = 0.75;
+const DEFAULT_EXCHANGE_RATE = 1.2;
+const DEFAULT_MARGIN_RATE = 0.8;
 const DEFAULT_LABOR_EXCHANGE_RATE = 1.2;
 const DEFAULT_LABOR_MARGIN_RATE = 0.8;
 const DEFAULT_DESCRIPTION = "";
