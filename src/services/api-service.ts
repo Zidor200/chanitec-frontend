@@ -1,7 +1,7 @@
 import { Client, Quote, Site, SupplyItem, LaborItem } from '../models/Quote';
 import { PriceOffer } from '../models/PriceOffer';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 class ApiService {
     // Helper method for making API calls
