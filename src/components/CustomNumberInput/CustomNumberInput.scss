@@ -1,0 +1,56 @@
+.custom-number-input {
+  .MuiTextField-root {
+    width: 12rem;
+
+    .MuiInputBase-root {
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    input[type="number"] {
+      -moz-appearance: textfield;
+      text-align: center;
+      padding: 8px 40px !important;
+
+      &::-webkit-inner-spin-button,
+      &::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+    }
+
+    .number-control-button {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      padding: 0;
+      border-radius: 0;
+      color: #666;
+
+      &.decrease-button {
+        margin-left: 2px;
+      }
+
+      &.increase-button {
+        margin-right: 2px;
+      }
+
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.04);
+      }
+
+      &:active {
+        background-color: rgba(0, 0, 0, 0.1);
+      }
+
+      &.Mui-disabled {
+        opacity: 0.5;
+        background-color: transparent;
+      }
+
+      svg {
+        font-size: 18px;
+      }
+    }
+  }
+}

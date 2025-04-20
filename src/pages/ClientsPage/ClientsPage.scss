@@ -1,0 +1,189 @@
+.clients-page {
+  padding: 2rem 0;
+
+  .page-header {
+    background-color: #1976d2;
+    color: white;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    border-radius: 4px;
+
+    .header-title {
+      margin: 0;
+      font-weight: 500;
+    }
+  }
+
+  .content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    .search-box {
+      flex: 1;
+      max-width: 300px;
+      margin-right: 1rem;
+    }
+
+    .add-button {
+      white-space: nowrap;
+    }
+  }
+
+  .client-card {
+    margin-bottom: 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+
+    .client-header {
+      display: flex;
+      align-items: center;
+      padding: 1rem;
+      background-color: #f5f5f5;
+
+      .client-name {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1rem;
+        color: #333;
+
+        .MuiIconButton-root {
+          padding: 4px;
+          margin-right: 4px;
+          color: #666;
+        }
+
+        .client-id {
+          color: #666;
+          font-size: 0.875rem;
+        }
+      }
+
+      .actions {
+        display: flex;
+        gap: 0.5rem;
+
+        .action-button {
+          padding: 4px;
+
+          &.edit {
+            color: #1976d2;
+          }
+
+          &.delete {
+            color: #d32f2f;
+          }
+        }
+      }
+    }
+
+    .sites-section {
+      padding: 1rem;
+
+      .sites-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+
+        .sites-title {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.875rem;
+          color: #666;
+        }
+      }
+
+      .sites-list {
+        .site-item {
+          display: flex;
+          align-items: center;
+          padding: 0.5rem;
+          border-radius: 4px;
+          margin-bottom: 0.5rem;
+
+          .site-name {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            .location-icon {
+              color: #1976d2;
+              font-size: 1.25rem;
+            }
+          }
+
+          .site-actions {
+            display: flex;
+            gap: 0.5rem;
+
+            .action-button {
+              padding: 4px;
+
+              &.edit {
+                color: #1976d2;
+              }
+
+              &.delete {
+                color: #d32f2f;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Styling for the client dialog
+.sites-input-section {
+  .sites-divider {
+    margin: 0.5rem 0 1rem;
+  }
+
+  .sites-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 0.5rem 0;
+    background-color: #f9f9f9;
+
+    .MuiListItem-root {
+      border-bottom: 1px solid #f0f0f0;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .MuiListItemText-primary {
+        font-size: 0.9rem;
+      }
+    }
+
+    .no-sites {
+      padding: 1rem;
+      text-align: center;
+    }
+  }
+
+  .add-site-form {
+    margin-top: 1rem;
+
+    .MuiButton-root {
+      min-width: 40px;
+      padding: 5px;
+    }
+  }
+}
+
+@media print {
+  .clients-page-container {
+    display: none;
+  }
+}
