@@ -52,7 +52,7 @@ import { apiService } from '../../services/api-service';
 import { generateClientId } from '../../utils/id-generator';
 import './ClientsPage.scss';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 interface ClientsPageProps {
   currentPath: string;

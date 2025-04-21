@@ -35,7 +35,7 @@ import './ItemsPage.scss';
 import { v4 as uuidv4 } from 'uuid';
 import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberInput';
 
-const API_BASE_URL =  'http://localhost:3001/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 interface ItemsPageProps {
   currentPath: string;
