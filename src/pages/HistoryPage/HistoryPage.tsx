@@ -78,7 +78,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
       // Group quotes by base ID to identify versions
       const versionGroups: { [baseId: string]: Quote[] } = {};
 
-      allQuotes.forEach(quote => {
+      allQuotes.forEach((quote: Quote) => {
         const baseId = extractBaseId(quote.id);
         if (baseId) {
           if (!versionGroups[baseId]) {
