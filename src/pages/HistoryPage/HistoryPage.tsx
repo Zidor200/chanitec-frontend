@@ -69,8 +69,8 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
     try {
       console.log('Loading quotes and clients...');
       const [allQuotes, allClients] = await Promise.all([
-        apiService.getQuotes(),
-        apiService.getClients()
+        fetch(`${process.env.REACT_APP_API_URL}/quotes`).then(res => res.json()),
+        fetch(`${process.env.REACT_APP_API_URL}/clients`).then(res => res.json())
       ]);
 
       console.log(`Loaded ${allQuotes.length} quotes and ${allClients.length} clients`);
@@ -113,7 +113,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
   const updateSiteOptions = async () => {
     if (filters.client) {
       try {
-        const sitesForClient = await apiService.getSitesByClientId(filters.client);
+        const sitesForClient = await fetch(`${process.env.REACT_APP_API_URL}/sites/by-client?clientId=${filters.client}`).then(res => res.json());
         setSites(sitesForClient);
       } catch (error) {
         console.error('Error loading sites:', error);
@@ -296,7 +296,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
   const handleDeleteQuote = async (quoteId: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce devis?')) {
       try {
-        await apiService.deleteQuote(quoteId);
+        await fetch(`${process.env.REACT_APP_API_URL}/quotes/${quoteId}`, { method: 'DELETE' });
         const updatedQuotes = quotes.filter(quote => quote.id !== quoteId);
         setQuotes(updatedQuotes);
 

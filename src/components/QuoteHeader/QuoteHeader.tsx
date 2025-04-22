@@ -90,7 +90,6 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
         setSiteError(null);
         setIsSitesLoading(true);
 
-        // Find the selected client from the clients array
         const selectedClient = clients.find(c => c.name === clientName);
         console.log('Selected client:', selectedClient);
 
@@ -103,10 +102,6 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
 
         setSelectedClientId(selectedClient.id);
 
-        // Fetch sites using API - similar to ClientsPage but for one client only
-        console.log('Fetching sites for client ID:', selectedClient.id);
-
-        // Build the API URL for direct fetch (matching ClientsPage pattern)
         const API_BASE_URL = process.env.REACT_APP_API_URL;
         const sitesUrl = `${API_BASE_URL}/sites/by-client?clientId=${selectedClient.id}`;
         console.log('Sending request to:', sitesUrl);
