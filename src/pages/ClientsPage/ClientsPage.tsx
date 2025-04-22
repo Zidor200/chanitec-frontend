@@ -52,7 +52,7 @@ import { apiService } from '../../services/api-service';
 import { generateClientId } from '../../utils/id-generator';
 import './ClientsPage.scss';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL;
+const API_BASE_URL = "chanitec-backend-production.up.railway.app";
 
 interface ClientsPageProps {
   currentPath: string;
