@@ -17,6 +17,7 @@
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
         "react-hook-form": "^7.55.0",
+        "react-router-dom": "^6.30.0",
         "react-scripts": "5.0.1",
         "react-to-pdf": "^2.0.0",
         "sass": "^1.86.3",
@@ -52,6 +53,7 @@
     },
     "devDependencies": {
         "@types/jest": "^29.5.14",
+        "@types/react-router-dom": "^5.3.3",
         "@types/uuid": "^10.0.0"
     }
 }

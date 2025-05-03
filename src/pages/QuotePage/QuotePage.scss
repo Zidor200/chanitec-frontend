@@ -126,6 +126,7 @@
   align-items: center;
   padding: 0.5rem 0;
   margin-bottom: 1rem;
+  flex-direction: column;
 
   .page-title {
     font-size: 1.25rem;
@@ -137,6 +138,13 @@
     max-width: 100%;
     margin: 0;
     padding: 0;
+  }
+
+  .original-quote-id {
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: 0.5rem;
+    font-style: italic;
   }
 }
 
@@ -250,6 +258,31 @@
 
       .page-title {
         color: black;
+      }
+    }
+  }
+}
+
+.quote-actions {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  justify-content: flex-end;
+
+  .MuiButton-root {
+    text-transform: none;
+
+    &.confirm-button {
+      background-color: #4caf50;
+      color: white;
+
+      &:hover {
+        background-color: #388e3c;
+      }
+
+      &.Mui-disabled {
+        background-color: #a5d6a7;
+        color: white;
       }
     }
   }

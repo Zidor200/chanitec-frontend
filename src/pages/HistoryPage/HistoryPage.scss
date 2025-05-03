@@ -50,23 +50,25 @@
         gap: 0.5rem;
 
         .id-number {
-          font-weight: 600;
-          color: #1976d2;
+          font-weight: 500;
+          margin-right: 8px;
         }
 
         .version-label {
-          font-size: 0.875rem;
-          padding: 0.25rem 0.5rem;
-          border-radius: 4px;
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 0.75rem;
+          margin-left: 8px;
+          font-weight: 500;
 
           &.original {
             background-color: #e8f5e9;
-            color: #4caf50;
+            color: #2e7d32;
           }
 
           &.update {
             background-color: #fff3e0;
-            color: #ff9800;
+            color: #f57c00;
           }
         }
       }
@@ -102,21 +104,26 @@
 
     .card-actions {
       display: flex;
-      justify-content: flex-end;
-      padding: 0.5rem 1rem;
-      background-color: #fafafa;
-      gap: 0.5rem;
+      align-items: center;
+      padding: 8px 16px;
 
       .action-button {
-        min-width: 0;
-        padding: 4px 8px;
-
         &.view {
           color: #1976d2;
         }
 
         &.delete {
           color: #d32f2f;
+        }
+      }
+
+      .MuiButton-root {
+        text-transform: none;
+        min-width: 100px;
+
+        &.Mui-disabled {
+          background-color: #a5d6a7;
+          color: white;
         }
       }
     }
@@ -139,6 +146,50 @@
       font-size: 0.875rem;
       color: #1976d2;
     }
+  }
+
+  .reminder-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+
+    .custom-number-input {
+      .MuiTextField-root {
+        width: 150px;
+      }
+    }
+
+    .MuiIconButton-root {
+      margin-left: 8px;
+
+      &.Mui-disabled {
+        opacity: 0.5;
+      }
+
+      &:hover {
+        background-color: rgba(25, 118, 210, 0.04);
+      }
+    }
+  }
+}
+
+.version-badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  &.original {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  &.update {
+    background-color: #fff3e0;
+    color: #f57c00;
   }
 }
 

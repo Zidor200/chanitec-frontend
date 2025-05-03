@@ -4,7 +4,9 @@ import {
   HomeOutlined,
   HistoryOutlined,
   PeopleOutlineOutlined,
-  InventoryOutlined
+  InventoryOutlined,
+  Menu,
+  Logout
 } from '@mui/icons-material';
 import logo from '../../logo.png'; // Import the logo from src directory
 import './Layout.scss';
@@ -14,17 +16,19 @@ interface LayoutProps {
   currentPath: string;
   onNavigate?: (path: string) => void;
   onHomeClick?: () => void;
+  onLogout?: () => void;
 }
 
 const Layout: React.FC<LayoutProps> = ({
   children,
   currentPath = '/',
   onNavigate,
-  onHomeClick
+  onHomeClick,
+  onLogout
 }) => {
   // Navigation items
   const navItems = [
-    { path: '/', label: 'Accueil', icon: <HomeOutlined /> },
+    { path: '/quote', label: 'Accueil', icon: <HomeOutlined /> },
     { path: '/history', label: 'Historique', icon: <HistoryOutlined /> },
     { path: '/clients', label: 'Clients', icon: <PeopleOutlineOutlined /> },
     { path: '/items', label: 'Gérer les articles', icon: <InventoryOutlined /> }
@@ -45,6 +49,14 @@ const Layout: React.FC<LayoutProps> = ({
       <AppBar position="static" color="primary" className="app-bar">
         <Toolbar>
           <Box className="toolbar-content">
+            <Button
+              color="inherit"
+              className="main-menu-button"
+              startIcon={<Menu />}
+              onClick={() => handleNavigate('/home')}
+            >
+              Menu Principal
+            </Button>
             <Box className="nav-links">
               {(navItems ?? []).map((item) => (
                 <Button
@@ -58,6 +70,16 @@ const Layout: React.FC<LayoutProps> = ({
                 </Button>
               ))}
             </Box>
+            {onLogout && (
+              <Button
+                color="inherit"
+                className="logout-button"
+                startIcon={<Logout />}
+                onClick={onLogout}
+              >
+                Déconnexion
+              </Button>
+            )}
           </Box>
         </Toolbar>
       </AppBar>

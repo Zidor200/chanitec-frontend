@@ -8,6 +8,8 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { usePDF } from 'react-to-pdf';
+import { apiService } from '../../services/api-service';
+import { useQuote } from '../../contexts/QuoteContext';
 import './QuoteActions.scss';
 
 interface QuoteActionsProps {
@@ -19,6 +21,8 @@ interface QuoteActionsProps {
   onUpdate?: () => Promise<boolean>;
   onViewHistory: () => void;
   contentRef: React.RefObject<HTMLDivElement>;
+  onPrint: () => void;
+  onDownloadPDF: () => void;
 }
 
 const QuoteActions: React.FC<QuoteActionsProps> = ({
@@ -29,8 +33,16 @@ const QuoteActions: React.FC<QuoteActionsProps> = ({
   onSave,
   onUpdate,
   onViewHistory,
-  contentRef
+  contentRef,
+  onPrint,
+  onDownloadPDF
 }) => {
+  const {
+    state,
+    saveQuote,
+    updateQuote,
+    setQuoteField
+  } = useQuote();
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState('');
   const [snackbarSeverity, setSnackbarSeverity] = React.useState<'success' | 'error'>('success');
@@ -72,32 +84,64 @@ const QuoteActions: React.FC<QuoteActionsProps> = ({
 
   // Handle update action
   const handleUpdate = async () => {
-    if (!onUpdate) return;
-
     try {
-      console.log('Starting quote update process...');
-      console.log('Current quote data before update:', {
-        clientName,
-        siteName,
-        date,
-        isExistingQuote
-      });
+      const currentQuoteInfo = {
+        id: state.currentQuote?.id || '',
+        clientName: state.currentQuote?.clientName || '',
+        siteName: state.currentQuote?.siteName || '',
+        object: state.currentQuote?.object || '',
+        date: state.currentQuote?.date || '',
+        supplyDescription: state.currentQuote?.supplyDescription || '',
+        laborDescription: state.currentQuote?.laborDescription || '',
+        supplyExchangeRate: state.currentQuote?.supplyExchangeRate || 0,
+        supplyMarginRate: state.currentQuote?.supplyMarginRate || 0,
+        laborExchangeRate: state.currentQuote?.laborExchangeRate || 0,
+        laborMarginRate: state.currentQuote?.laborMarginRate || 0,
+        supplyItems: state.currentQuote?.supplyItems || [],
+        laborItems: state.currentQuote?.laborItems || [],
+        totalSuppliesHT: state.currentQuote?.totalSuppliesHT || 0,
+        totalLaborHT: state.currentQuote?.totalLaborHT || 0,
+        totalHT: state.currentQuote?.totalHT || 0,
+        tva: state.currentQuote?.tva || 0,
+        totalTTC: state.currentQuote?.totalTTC || 0,
+        createdAt: state.currentQuote?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        confirmed: false,
+        reminderDate: null
+      };
 
-      const success = await onUpdate();
-      console.log('Update result:', success);
+      const originalQuote = await apiService.getQuoteById(currentQuoteInfo.id);
+      const hasChanges = JSON.stringify(currentQuoteInfo) !== JSON.stringify(originalQuote);
 
-      if (success) {
-        setSnackbarMessage('Nouvelle version du devis créée avec succès!');
-        setSnackbarSeverity('success');
+      if (hasChanges) {
+        const currentId = currentQuoteInfo.id;
+        const parts = currentId.split('-');
+        const version = parseInt(parts[2]) + 1;
+        const newId = `${parts[0]}-${parts[1]}-${version}`;
+
+        const updatedQuote = {
+          ...currentQuoteInfo,
+          id: newId,
+          updatedAt: new Date().toISOString()
+        };
+
+        alert(`About to send the following payload to the database:\n\n${JSON.stringify(updatedQuote, null, 2)}`);
+
+        const success = await updateQuote();
+
+        if (success) {
+          setSnackbarMessage('Devis mis à jour avec succès!');
+          setSnackbarSeverity('success');
+        } else {
+          throw new Error('Failed to update quote');
+        }
       } else {
-        setSnackbarMessage('Erreur lors de la création d\'une nouvelle version.');
-        setSnackbarSeverity('error');
+        alert('No changes detected in the quote');
       }
 
       setSnackbarOpen(true);
     } catch (error) {
-      console.error('Error in handleUpdate:', error);
-      setSnackbarMessage('Erreur lors de la création d\'une nouvelle version.');
+      setSnackbarMessage('Erreur lors de la mise à jour du devis.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     }
@@ -110,7 +154,7 @@ const QuoteActions: React.FC<QuoteActionsProps> = ({
     const cleanSiteName = (siteName || 'Site').replace(/[^a-zA-Z0-9]/g, '-');
 
     return `${cleanClientName}-${cleanSiteName}-${formattedDate}.pdf`;
-  };
+  }
 
   // Handle PDF download
   const handleDownloadPDF = () => {
@@ -164,7 +208,7 @@ const QuoteActions: React.FC<QuoteActionsProps> = ({
             color="primary"
             className="action-button update-button"
             startIcon={<UpdateIcon />}
-            onClick={handleSave}
+            onClick={handleUpdate}
           >
             Mettre à jour
           </Button>
@@ -182,22 +226,12 @@ const QuoteActions: React.FC<QuoteActionsProps> = ({
 
         <Button
           variant="contained"
-          color="secondary"
-          className="action-button print-button"
-          startIcon={<PrintOutlined />}
-          onClick={handlePrint}
-        >
-          Imprimer
-        </Button>
-
-        <Button
-          variant="contained"
           color="info"
           className="action-button download-button"
           startIcon={<DownloadIcon />}
-          onClick={handleDownloadPDF}
+          onClick={onPrint}
         >
-          Télécharger PDF
+          Enregistrer sous
         </Button>
       </Box>
 

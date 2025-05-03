@@ -26,6 +26,7 @@ export const generateQuoteId = (baseId?: string, version: number = 0): string =>
   // If a baseId is provided, use it, otherwise generate a new one
   const randomPart = baseId || generateRandomDigits(8);
 
+  // Always include version number, even if it's 0
   return `F-${randomPart}-${version}`;
 };
 
@@ -35,7 +36,8 @@ export const generateQuoteId = (baseId?: string, version: number = 0): string =>
  * @returns The 8-digit base ID or null if the format is invalid
  */
 export const extractBaseId = (quoteId: string): string | null => {
-  const match = quoteId.match(/^F-(\d{8})-\d+$/);
+  // More flexible regex to handle various formats
+  const match = quoteId.match(/^F-(\d{8})(?:-(\d+))?$/);
   return match ? match[1] : null;
 };
 
@@ -45,8 +47,14 @@ export const extractBaseId = (quoteId: string): string | null => {
  * @returns The version number as a number or null if the format is invalid
  */
 export const extractVersion = (quoteId: string): number | null => {
+  // More flexible regex to handle various formats
   const match = quoteId.match(/^F-\d{8}-(\d+)$/);
-  return match ? parseInt(match[1], 10) : null;
+  if (!match) {
+    // Check if it's a base ID without version
+    const baseMatch = quoteId.match(/^F-\d{8}$/);
+    return baseMatch ? 0 : null;
+  }
+  return parseInt(match[1], 10);
 };
 
 /**
