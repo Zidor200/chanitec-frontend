@@ -2,28 +2,50 @@ import { Client, Quote, Site, SupplyItem, LaborItem } from '../models/Quote';
 import { PriceOffer } from '../models/PriceOffer';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
 
 class ApiService {
+    // Helper method for making API calls with retry logic
+    private async fetchWithRetry<T>(
+        url: string,
+        options: RequestInit = {},
+        retries = MAX_RETRIES
+    ): Promise<T> {
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`API call failed: ${response.statusText}`);
+            }
+
+            // Handle 204 No Content responses
+            if (response.status === 204) {
+                return undefined as T;
+            }
+
+            return response.json();
+        } catch (error) {
+            if (retries > 0) {
+                console.log(`Retrying API call, ${retries} attempts remaining...`);
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                return this.fetchWithRetry<T>(url, options, retries - 1);
+            }
+            throw error;
+        }
+    }
+
     // Helper method for making API calls
     private async fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error(`API call failed: ${response.statusText}`);
-        }
-
-        // Handle 204 No Content responses
-        if (response.status === 204) {
-            return undefined as T;
-        }
-
-        return response.json();
+        const url = `${API_BASE_URL}${endpoint}`;
+        console.log(`Making API call to: ${url}`);
+        return this.fetchWithRetry<T>(url, options);
     }
 
     // Quotes
@@ -31,8 +53,12 @@ class ApiService {
         return this.fetchApi<Quote[]>('/quotes');
     }
 
-    async getQuoteById(id: string): Promise<Quote> {
-        return this.fetchApi<Quote>(`/quotes/${id}`);
+    async getQuoteById(id: string): Promise<Quote | null> {
+        try {
+            return await this.fetchApi<Quote>(`/quotes/${id}`);
+        } catch (error) {
+            throw error;
+        }
     }
 
     async saveQuote(quote: Quote): Promise<Quote> {
@@ -49,7 +75,6 @@ class ApiService {
     }
 
     async updateQuote(quote: Quote): Promise<Quote> {
-        console.log('Updating quote in API service:', quote);
         const response = await fetch(`${API_BASE_URL}/quotes/${quote.id}`, {
             method: 'PUT',
             headers: {
@@ -62,9 +87,7 @@ class ApiService {
             throw new Error(`Failed to update quote: ${response.statusText}`);
         }
 
-        const updatedQuote = await response.json();
-        console.log('Update quote response:', updatedQuote);
-        return updatedQuote;
+        return await response.json();
     }
 
     // Clients
@@ -140,27 +163,20 @@ class ApiService {
         return this.fetchApi<LaborItem[]>(`/labor-items/${quoteId}`);
     }
 
-    async createLaborItem(item: Omit<LaborItem, 'id'>, quoteId: string): Promise<LaborItem> {
-        // Transform the item properties to match backend expectations and ensure correct data types
-        const transformedItem = {
-            quote_id: quoteId,                                    // varchar(36)
-            description: String(item.description),                // text
-            nb_technicians: parseInt(String(item.nbTechnicians)), // int
-            nb_hours: parseFloat(Number(item.nbHours).toFixed(2)),            // decimal(10,2)
-            weekend_multiplier: parseFloat(Number(item.weekendMultiplier).toFixed(2)), // decimal(10,2)
-            price_euro: parseFloat(Number(item.priceEuro).toFixed(2)),        // decimal(10,2)
-            price_dollar: parseFloat(Number(item.priceDollar || 0).toFixed(2)),    // decimal(10,2)
-            unit_price_dollar: parseFloat(Number(item.unitPriceDollar || 0).toFixed(2)), // decimal(10,2)
-            total_price_dollar: parseFloat(Number(item.totalPriceDollar || 0).toFixed(2)) // decimal(10,2)
-        };
-
-        // Log the transformed item for debugging
-        console.log('Sending labor item data:', transformedItem);
-
-        return this.fetchApi<LaborItem>(`/labor-items/${quoteId}`, {
+    async createLaborItem(quoteId: string, item: Omit<LaborItem, 'id'>): Promise<LaborItem> {
+        const response = await fetch(`${API_BASE_URL}/quotes/${quoteId}/labor-items`, {
             method: 'POST',
-            body: JSON.stringify(transformedItem)
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(item),
         });
+
+        if (!response.ok) {
+            throw new Error(`Failed to create labor item: ${response.statusText}`);
+        }
+
+        return await response.json();
     }
 
     // Price Offers
@@ -173,6 +189,22 @@ class ApiService {
             method: 'POST',
             body: JSON.stringify(offer)
         });
+    }
+
+    async createSupplyItem(quoteId: string, item: Omit<SupplyItem, 'id'>): Promise<SupplyItem> {
+        const response = await fetch(`${API_BASE_URL}/quotes/${quoteId}/supply-items`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(item),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to create supply item: ${response.statusText}`);
+        }
+
+        return await response.json();
     }
 }
 

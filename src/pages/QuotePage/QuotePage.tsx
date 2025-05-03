@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { Box, Container, Paper, Typography, AppBar, Toolbar } from '@mui/material';
+import React, { useRef, useEffect, useState } from 'react';
+import { Box, Container, Paper, Typography, AppBar, Toolbar, Button } from '@mui/material';
 import Layout from '../../components/Layout/Layout';
 import QuoteHeader from '../../components/QuoteHeader/QuoteHeader';
 import SuppliesSection from '../../components/SuppliesSection/SuppliesSection';
@@ -9,12 +9,16 @@ import QuoteActions from '../../components/QuoteActions/QuoteActions';
 import { useQuote } from '../../contexts/QuoteContext';
 import './QuotePage.scss';
 import logo from '../../logo.png';
+import { useLocation } from 'react-router-dom';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+
 interface QuotePageProps {
   currentPath: string;
   onNavigate: (path: string) => void;
+  onLogout?: () => void;
 }
 
-const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate }) => {
+const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout }) => {
   const {
     state,
     createNewQuote,
@@ -26,34 +30,85 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate }) => {
     addLaborItem,
     removeLaborItem,
     recalculateTotals,
-    clearQuote
+    clearQuote,
+    loadQuote
   } = useQuote();
 
-  const { currentQuote, isLoading, isExistingQuote } = state;
+  const { currentQuote, isLoading, isExistingQuote, originalQuoteId } = state;
   const contentRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
+  const location = useLocation();
+  const quoteId = new URLSearchParams(location.search).get('id');
 
-  // Create a new quote if none exists
+  const [isFromHistory, setIsFromHistory] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [isReadOnly, setIsReadOnly] = useState(false);
+
+  // Load quote if ID is provided in URL
   useEffect(() => {
-    if (!currentQuote) {
+    if (quoteId && !currentQuote && !isLoading) {
+      loadQuote(quoteId);
+    }
+  }, [quoteId, isLoading, loadQuote]);
+
+  // Create a new quote if none exists and we're not loading one
+  useEffect(() => {
+    if (!currentQuote && !isLoading && !quoteId) {
       createNewQuote();
     }
-  }, [currentQuote, createNewQuote]);
+  }, [currentQuote, isLoading, createNewQuote, quoteId]);
 
-  // Navigate to history page
-  const handleViewHistory = () => {
-    onNavigate('/history');
-  };
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const fromHistory = queryParams.get('fromHistory') === 'true';
+    const confirmed = queryParams.get('confirmed') === 'true';
+    setIsFromHistory(fromHistory);
+    setIsConfirmed(confirmed);
+  }, []);
+
+  // Update isReadOnly when currentQuote changes
+  useEffect(() => {
+    if (currentQuote) {
+      setIsReadOnly(currentQuote.confirmed || false);
+      setIsConfirmed(currentQuote.confirmed || false);
+    }
+  }, [currentQuote]);
 
   // Handle home button click
   const handleHomeClick = () => {
     clearQuote();
     createNewQuote();
+    onNavigate('/');
+  };
+
+  const handleConfirmQuote = async () => {
+    if (!currentQuote) return;
+
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/quotes/${currentQuote.id}/confirm`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ confirmed: true }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to confirm quote');
+      }
+
+      setIsConfirmed(true);
+      // Show success message
+      alert('Devis confirmé avec succès');
+    } catch (error) {
+      console.error('Error confirming quote:', error);
+      alert('Erreur lors de la confirmation du devis');
+    }
   };
 
   // If no quote is loaded or is still loading, show loading
   if (!currentQuote || isLoading) {
     return (
-      <Layout currentPath={currentPath} onNavigate={onNavigate} onHomeClick={handleHomeClick}>
+      <Layout currentPath={currentPath} onNavigate={onNavigate} onLogout={onLogout} onHomeClick={handleHomeClick}>
         <Box className="page-header">
           <Typography variant="h6" component="h1" className="page-title">
             CALCUL DE PRIX OFFRE CLIMATISATION
@@ -67,7 +122,7 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate }) => {
   }
 
   return (
-    <Layout currentPath={currentPath} onNavigate={onNavigate} onHomeClick={handleHomeClick}>
+    <Layout currentPath={currentPath} onNavigate={onNavigate} onLogout={onLogout} onHomeClick={handleHomeClick}>
       <Box sx={{ display: 'flex', position: 'relative', width: '100%' , backgroundColor: 'white' , color: 'black'}} className="page-header">
         <Box sx={{ position: 'absolute', left: 0 }}>
           <img
@@ -80,6 +135,11 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate }) => {
           <Typography variant="h6" component="h1" className="page-title">
             CALCUL DE PRIX OFFRE CLIMATISATION
           </Typography>
+          {isExistingQuote && originalQuoteId && (
+            <Typography variant="subtitle1" color="text.secondary" className="original-quote-id">
+              Devis: {originalQuoteId}
+            </Typography>
+          )}
         </Box>
       </Box>
       <Container ref={contentRef} className="quote-content">
@@ -130,6 +190,29 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate }) => {
         />
       </Container>
 
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mb: 2 }}>
+        {isFromHistory && (
+          <Button
+            variant="contained"
+            startIcon={<CheckCircleOutlineIcon />}
+            onClick={handleConfirmQuote}
+            disabled={isConfirmed}
+            sx={{
+              backgroundColor: isConfirmed ? '#4caf50' : '#1976d2',
+              '&:hover': {
+                backgroundColor: isConfirmed ? '#4caf50' : '#1565c0',
+              },
+              '&.Mui-disabled': {
+                backgroundColor: '#4caf50',
+                color: 'white',
+              }
+            }}
+          >
+            {isConfirmed ? 'Devis Confirmé' : 'Confirmer le Devis'}
+          </Button>
+        )}
+      </Box>
+
       <QuoteActions
         clientName={currentQuote.clientName}
         siteName={currentQuote.siteName}
@@ -137,8 +220,10 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate }) => {
         isExistingQuote={isExistingQuote}
         onSave={saveQuote}
         onUpdate={updateQuote}
-        onViewHistory={handleViewHistory}
+        onViewHistory={() => onNavigate('/history')}
         contentRef={contentRef}
+        onPrint={() => onNavigate(`/quote-test?id=${currentQuote.id}`)}
+        onDownloadPDF={() => onNavigate(`/quote-test?id=${currentQuote.id}`)}
       />
     </Layout>
   );

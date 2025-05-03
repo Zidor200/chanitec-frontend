@@ -80,6 +80,11 @@ export interface Quote {
   // Metadata
   createdAt: string;
   updatedAt: string;
+
+  reminderDate?: string;
+  tempReminderDays?: number; // Temporary field for UI state
+
+  confirmed?: boolean;
 }
 
 /**

@@ -159,7 +159,7 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
     <Paper className="quote-header" elevation={2}>
       <Box className="quote-id-display">
         <Typography variant="subtitle1" className="id-label">
-          ID Devis:
+          Devis:
         </Typography>
         <Tooltip title={isRevision ? `Version ${version} du devis` : "Version originale"}>
           <Typography variant="subtitle1" className={`id-value ${isRevision ? 'is-revision' : ''}`}>

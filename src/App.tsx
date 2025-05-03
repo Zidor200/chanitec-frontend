@@ -2,12 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Snackbar, Alert } from '@mui/material';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QuoteProvider } from './contexts/QuoteContext';
 import QuotePage from './pages/QuotePage/QuotePage';
 import HistoryPage from './pages/HistoryPage/HistoryPage';
 import ClientsPage from './pages/ClientsPage/ClientsPage';
 import ItemsPage from './pages/ItemsPage/ItemsPage';
 import PriceOfferPage from './pages/PriceOfferPage/PriceOfferPage';
+import LoginPage from './pages/LoginPage/LoginPage';
+import HomePage from './pages/HomePage/HomePage';
+import QuoteTest from './pages/QuoteTest/QuoteTest';
+import InterventionPage from './pages/interventionPage';
 import { storageService } from './services/storage-service';
 import './App.scss';
 
@@ -76,7 +81,17 @@ const theme = createTheme({
   },
 });
 
+// Protected Route component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+};
+
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentPath, setCurrentPath] = useState('/');
   const [notification, setNotification] = useState({
     open: false,
@@ -105,12 +120,45 @@ function App() {
     }
   }, []);
 
+  // Handle login
+  const handleLogin = (username: string, password: string) => {
+    if (username && password) {
+      setIsAuthenticated(true);
+      localStorage.setItem('isAuthenticated', 'true');
+    } else {
+      setNotification({
+        open: true,
+        message: 'Veuillez remplir tous les champs',
+        severity: 'error'
+      });
+    }
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('isAuthenticated');
+    window.location.href = '/login';
+  };
+
   // Handle navigation
   const handleNavigate = (path: string, quoteId?: string) => {
-    if (path === '/price-offer' && quoteId) {
+    if (quoteId) {
+      const queryParams = new URLSearchParams(window.location.search);
+      const fromHistory = queryParams.get('fromHistory');
+      const confirmed = queryParams.get('confirmed');
+
+      let newPath = `${path}?id=${quoteId}`;
+      if (fromHistory) newPath += `&fromHistory=${fromHistory}`;
+      if (confirmed) newPath += `&confirmed=${confirmed}`;
+
       setPriceOfferQuoteId(quoteId);
+      setCurrentPath(newPath);
+      window.location.href = newPath;
+    } else {
+      setCurrentPath(path);
+      window.location.href = path;
     }
-    setCurrentPath(path);
   };
 
   // Close notification
@@ -118,73 +166,117 @@ function App() {
     setNotification({...notification, open: false});
   };
 
-  // Render appropriate page based on current path
-  const renderPage = () => {
-    switch (currentPath) {
-      case '/':
-        return (
-          <QuotePage
-            currentPath={currentPath}
-            onNavigate={handleNavigate}
-          />
-        );
-      case '/history':
-        return (
-          <HistoryPage
-            currentPath={currentPath}
-            onNavigate={handleNavigate}
-          />
-        );
-      case '/clients':
-        return (
-          <ClientsPage
-            currentPath={currentPath}
-            onNavigate={handleNavigate}
-          />
-        );
-      case '/items':
-        return (
-          <ItemsPage
-            currentPath={currentPath}
-            onNavigate={handleNavigate}
-          />
-        );
-      case '/price-offer':
-        return (
-          <PriceOfferPage
-            currentPath={currentPath}
-            onNavigate={handleNavigate}
-            quoteId={priceOfferQuoteId}
-          />
-        );
-      default:
-        // Redirect to home if path not found
-        setCurrentPath('/');
-        return null;
-    }
-  };
-
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <QuoteProvider>
-        {renderPage()}
-        <Snackbar
-          open={notification.open}
-          autoHideDuration={6000}
-          onClose={handleCloseNotification}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        >
-          <Alert
+    <BrowserRouter>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <QuoteProvider>
+          <Routes>
+            <Route
+              path="/login"
+              element={
+                isAuthenticated ?
+                <Navigate to="/home" replace /> :
+                <LoginPage onLogin={handleLogin} />
+              }
+            />
+
+            <Route
+              path="/home"
+              element={
+                <ProtectedRoute>
+                  <HomePage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/quote"
+              element={
+                <ProtectedRoute>
+                  <QuotePage currentPath="/quote" onNavigate={handleNavigate} onLogout={handleLogout} />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/quote-test"
+              element={
+                <ProtectedRoute>
+                  <QuoteTest currentPath="/quote-test" onNavigate={handleNavigate} />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/history"
+              element={
+                <ProtectedRoute>
+                  <HistoryPage currentPath="/history" onNavigate={handleNavigate} />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/clients"
+              element={
+                <ProtectedRoute>
+                  <ClientsPage currentPath="/clients" onNavigate={handleNavigate} />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/items"
+              element={
+                <ProtectedRoute>
+                  <ItemsPage currentPath="/items" onNavigate={handleNavigate} />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/price-offer"
+              element={
+                <ProtectedRoute>
+                  <PriceOfferPage
+                    currentPath="/price-offer"
+                    onNavigate={handleNavigate}
+                    quoteId={priceOfferQuoteId}
+                  />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/intervention"
+              element={
+                <ProtectedRoute>
+                  <InterventionPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route path="/" element={<Navigate to="/quote" replace />} />
+          </Routes>
+
+          <Snackbar
+            open={notification.open}
+            autoHideDuration={6000}
             onClose={handleCloseNotification}
-            severity={notification.severity}
-            sx={{ width: '100%' }}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
           >
-            {notification.message}
-          </Alert>
-        </Snackbar>
-      </QuoteProvider>
-    </ThemeProvider>
+            <Alert
+              onClose={handleCloseNotification}
+              severity={notification.severity}
+              sx={{ width: '100%' }}
+            >
+              {notification.message}
+            </Alert>
+          </Snackbar>
+        </QuoteProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
 

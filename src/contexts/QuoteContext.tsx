@@ -29,6 +29,7 @@ interface QuoteState {
   isLoading: boolean;
   error: string | null;
   isExistingQuote: boolean;
+  originalQuoteId: string | null;
 }
 
 // Action types
@@ -47,7 +48,8 @@ type QuoteAction =
   | { type: 'ADD_LABOR_ITEM'; payload: Omit<LaborItem, 'id'> }
   | { type: 'UPDATE_LABOR_ITEM'; payload: LaborItem }
   | { type: 'REMOVE_LABOR_ITEM'; payload: string }
-  | { type: 'RECALCULATE_TOTALS' };
+  | { type: 'RECALCULATE_TOTALS' }
+  | { type: 'SET_ORIGINAL_QUOTE_ID'; payload: string | null };
 
 // Initial state
 const initialState: QuoteState = {
@@ -56,6 +58,7 @@ const initialState: QuoteState = {
   isLoading: false,
   error: null,
   isExistingQuote: false,
+  originalQuoteId: null,
 };
 
 // Reducer function
@@ -340,6 +343,13 @@ const quoteReducer = (state: QuoteState, action: QuoteAction): QuoteState => {
       };
     }
 
+    case 'SET_ORIGINAL_QUOTE_ID': {
+      return {
+        ...state,
+        originalQuoteId: action.payload,
+      };
+    }
+
     default:
       return state;
   }
@@ -406,64 +416,19 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
 
   // Load a quote by ID
   const loadQuote = async (id: string) => {
+    dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-
-      // Extract the base ID and get next version
-      const baseId = extractBaseId(id);
-      const nextVersion = getNextVersion(id);
-
-      if (!baseId) {
-        throw new Error('Invalid quote ID format');
-      }
-
-      // Create new ID with incremented version
-      const newId = generateQuoteId(baseId, nextVersion);
-
-      console.log('=== Loading Quote Data ===');
-      console.log('Old Quote ID:', id);
-      console.log('New Quote ID:', newId);
-      console.log('Base ID:', baseId);
-      console.log('Next Version:', nextVersion);
-
-      // Get the complete quote with all items from the backend
       const quote = await apiService.getQuoteById(id);
-
-      // Get today's date in YYYY-MM-DD format
-      const today = new Date().toISOString().split('T')[0];
-
-      // Create updated quote with new ID and today's date
-      const updatedQuote = {
-        ...quote,
-        id: newId,
-        date: today,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      // Update supply items with new quote_id
-      const updatedSupplyItems = updatedQuote.supplyItems.map(item => ({
-        ...item,
-        quote_id: newId
-      }));
-
-      // Update labor items with new quote_id
-      const updatedLaborItems = updatedQuote.laborItems.map(item => ({
-        ...item,
-        quote_id: newId
-      }));
-
-      // Create the final quote with updated items
-      const finalQuote = {
-        ...updatedQuote,
-        supplyItems: updatedSupplyItems,
-        laborItems: updatedLaborItems
-      };
-
-      dispatch({ type: 'SET_QUOTE', payload: finalQuote });
+      if (!quote) {
+        throw new Error('Quote not found');
+      }
+      dispatch({ type: 'SET_ORIGINAL_QUOTE_ID', payload: id });
+      dispatch({ type: 'SET_QUOTE', payload: quote });
       dispatch({ type: 'SET_EXISTING_QUOTE', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to load quote' });
+      dispatch({ type: 'CLEAR_QUOTE' });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -472,47 +437,13 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
   // Save current quote
   const saveQuote = async (): Promise<boolean> => {
     if (!state.currentQuote) return false;
-
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-
-      console.log('=== Saving Quote Data ===');
-      console.log('Quote ID:', state.currentQuote.id);
-      console.log('Client Name:', state.currentQuote.clientName);
-      console.log('Site Name:', state.currentQuote.siteName);
-      console.log('Date:', state.currentQuote.date);
-      console.log('Object:', state.currentQuote.object);
-      console.log('Supply Description:', state.currentQuote.supplyDescription);
-      console.log('Labor Description:', state.currentQuote.laborDescription);
-      console.log('Exchange Rates:', {
-        supplyExchangeRate: state.currentQuote.supplyExchangeRate,
-        supplyMarginRate: state.currentQuote.supplyMarginRate,
-        laborExchangeRate: state.currentQuote.laborExchangeRate,
-        laborMarginRate: state.currentQuote.laborMarginRate
-      });
-      console.log('Supply Items:', state.currentQuote.supplyItems);
-      console.log('Labor Items:', state.currentQuote.laborItems);
-      console.log('Totals:', {
-        totalSuppliesHT: state.currentQuote.totalSuppliesHT,
-        totalLaborHT: state.currentQuote.totalLaborHT,
-        totalHT: state.currentQuote.totalHT,
-        tva: state.currentQuote.tva,
-        totalTTC: state.currentQuote.totalTTC
-      });
-      console.log('Timestamps:', {
-        createdAt: state.currentQuote.createdAt,
-        updatedAt: state.currentQuote.updatedAt
-      });
-      console.log('=== End Quote Data ===');
-
-      // Save the quote
       const savedQuote = await apiService.saveQuote(state.currentQuote);
-
       dispatch({ type: 'SET_QUOTE', payload: savedQuote });
       dispatch({ type: 'SET_EXISTING_QUOTE', payload: true });
       return true;
     } catch (error) {
-      console.error('Error saving quote:', error);
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to save quote' });
       return false;
     } finally {
@@ -523,48 +454,73 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
   // Update current quote - keep the same ID
   const updateQuote = async (): Promise<boolean> => {
     if (!state.currentQuote) return false;
-
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
+      const originalQuote = await apiService.getQuoteById(state.currentQuote.id);
+      const hasChanges = JSON.stringify(state.currentQuote) !== JSON.stringify(originalQuote);
 
-      console.log('=== Updating Quote Data ===');
-      console.log('Quote ID:', state.currentQuote.id);
+      if (hasChanges) {
+        // Generate new ID
+        const baseId = state.currentQuote.id.split('-')[1];
+        const currentVersion = parseInt(state.currentQuote.id.split('-')[2]);
+        const nextVersion = currentVersion + 1;
+        const newId = `F-${baseId}-${nextVersion}`;
 
-      // Create updated quote with current timestamp
-      const updatedQuote = {
-        ...state.currentQuote,
-        updatedAt: new Date().toISOString()
-      };
+        // Create the quote payload without supply and labor items
+        const quotePayload = {
+          ...state.currentQuote,
+          id: newId,
+          updatedAt: new Date().toISOString(),
+          supplyItems: [], // Empty array as we'll create new items
+          laborItems: []   // Empty array as we'll create new items
+        };
 
-      // Format supply items for backend - keep the same quote_id
-      const formattedSupplyItems = updatedQuote.supplyItems.map(item => ({
-        ...item,
-        quote_id: state.currentQuote!.id
-      }));
+        // Save the quote first
+        const savedQuote = await apiService.updateQuote(quotePayload);
 
-      // Format labor items for backend - keep the same quote_id
-      const formattedLaborItems = updatedQuote.laborItems.map(item => ({
-        ...item,
-        quote_id: state.currentQuote!.id
-      }));
+        // Now create new supply items with the new quote ID
+        if (state.currentQuote.supplyItems.length > 0) {
+          const supplyItemPromises = state.currentQuote.supplyItems.map(item => {
+            const newItem = {
+              ...item,
+              id: undefined, // Let the backend generate new ID
+              quote_id: newId // Use the new quote ID
+            };
+            return apiService.createSupplyItem(newId, newItem);
+          });
+          await Promise.all(supplyItemPromises);
+        }
 
-      // Create the complete payload for the backend
-      const payload = {
-        ...updatedQuote,
-        supplyItems: formattedSupplyItems,
-        laborItems: formattedLaborItems
-      };
+        // Create new labor items with the new quote ID
+        if (state.currentQuote.laborItems.length > 0) {
+          const laborItemPromises = state.currentQuote.laborItems.map(item => {
+            const newItem = {
+              ...item,
+              id: undefined, // Let the backend generate new ID
+              quote_id: newId // Use the new quote ID
+            };
+            return apiService.createLaborItem(newId, newItem);
+          });
+          await Promise.all(laborItemPromises);
+        }
 
-      console.log('=== Sending Payload to Backend ===');
-      console.log('Complete Payload:', payload);
+        // Fetch the complete updated quote with new items
+        const completeQuoteResponse = await apiService.getQuoteById(newId);
 
-      const savedQuote = await apiService.updateQuote(payload);
-      console.log('Update quote response:', savedQuote);
+        // Check if we got a valid quote back and assert its type
+        if (!completeQuoteResponse) {
+          throw new Error('Failed to fetch updated quote');
+        }
 
-      dispatch({ type: 'SET_QUOTE', payload: savedQuote });
-      return true;
+        const completeQuote: Quote = completeQuoteResponse;
+
+        // Update state with complete quote
+        dispatch({ type: 'SET_QUOTE', payload: completeQuote });
+        dispatch({ type: 'SET_ORIGINAL_QUOTE_ID', payload: completeQuote.id });
+        return true;
+      }
+      return false;
     } catch (error) {
-      console.error('Error updating quote:', error);
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to update quote' });
       return false;
     } finally {

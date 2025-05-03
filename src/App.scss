@@ -9,6 +9,8 @@ html, body {
 // General style resets and defaults
 * {
   box-sizing: border-box;
+  margin-top: 0;
+  padding-top: 0;
 }
 
 // Base styles
@@ -97,37 +99,11 @@ body {
 
 // Print-specific styles
 @media print {
-  html, body {
-    width: 210mm;
-    height: auto;
+  @page {
+    size: A4;
     margin: 0;
-    padding: 0;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
   }
 
-  body {
-    background-color: white;
-    position: relative;
-  }
-
-
-  // Add faded logo background
-  .quote-content::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: url('./logo.png');
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 80%;
-    opacity: 0.1;
-    z-index: -1;
-    pointer-events: none;
-  }
 
   .page-header {
     display: none; // Hide the page header when printing
@@ -137,17 +113,7 @@ body {
     display: none !important;
   }
 
-  @page {
-    size: A4 portrait;
-    margin: 10mm;
-  }
 
-  .main-content {
-    transform-origin: top center;
-    transform: scale(1);
-    max-width: 190mm !important;
-    margin: 0 auto !important;
-  }
 
   .quote-content,
   .quote-content > div,

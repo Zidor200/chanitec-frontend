@@ -59,28 +59,29 @@ class StorageService {
   /**
    * Get data from localStorage with a fallback default value
    */
-  private getFromStorage<T>(key: string, defaultValue: T): T {
-    const data = localStorage.getItem(key);
-    if (!data) return defaultValue;
-
+  private getFromStorage<T>(key: string): T | null {
     try {
-      return JSON.parse(data) as T;
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : null;
     } catch (error) {
-      console.error(`Error parsing data from localStorage key ${key}:`, error);
-      return defaultValue;
+      return null;
     }
   }
 
   /**
    * Save data to localStorage
    */
-  private saveToStorage<T>(key: string, data: T): void {
-    localStorage.setItem(key, JSON.stringify(data));
+  private saveToStorage(key: string, data: any): void {
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (error) {
+      // Silent fail - storage errors shouldn't break the app
+    }
   }
 
   // Quotes
   getQuotes(): Quote[] {
-    return this.getFromStorage<Quote[]>(STORAGE_KEYS.QUOTES, []);
+    return this.getFromStorage<Quote[]>(STORAGE_KEYS.QUOTES) || [];
   }
 
   getQuoteById(id: string): Quote | undefined {
@@ -130,7 +131,7 @@ class StorageService {
 
   // Clients
   getClients(): Client[] {
-    return this.getFromStorage<Client[]>(STORAGE_KEYS.CLIENTS, []);
+    return this.getFromStorage<Client[]>(STORAGE_KEYS.CLIENTS) || [];
   }
 
   getClientById(id: string): Client | undefined {
@@ -176,7 +177,7 @@ class StorageService {
 
   // Sites
   getSites(): Site[] {
-    return this.getFromStorage<Site[]>(STORAGE_KEYS.SITES, []);
+    return this.getFromStorage<Site[]>(STORAGE_KEYS.SITES) || [];
   }
 
   getSitesByClientId(clientId: string): Site[] {
@@ -218,7 +219,7 @@ class StorageService {
 
   // Supplies (product catalog)
   getSupplies(): SupplyItem[] {
-    return this.getFromStorage<SupplyItem[]>(STORAGE_KEYS.SUPPLIES, []);
+    return this.getFromStorage<SupplyItem[]>(STORAGE_KEYS.SUPPLIES) || [];
   }
 
   saveSupply(supply: Omit<SupplyItem, 'id'> & { id?: string }): SupplyItem {

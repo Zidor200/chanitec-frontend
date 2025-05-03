@@ -28,6 +28,10 @@ import { extractBaseId, extractVersion } from '../../utils/id-generator';
 import './HistoryPage.scss';
 import { ReceiptLongOutlined } from '@mui/icons-material';
 import { priceOfferService } from '../../services/price-offer-service';
+import AddAlarmIcon from '@mui/icons-material/AddAlarm';
+import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberInput';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 interface HistoryPageProps {
   currentPath: string;
@@ -74,6 +78,19 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
       ]);
 
       console.log(`Loaded ${allQuotes.length} quotes and ${allClients.length} clients`);
+
+      // Check for quotes with reminder dates
+      allQuotes.forEach((quote: Quote) => {
+        if (quote.reminderDate) {
+          const reminderDate = new Date(quote.reminderDate);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          if (reminderDate >= today) {
+            alert(`Rappel pour le devis ${quote.id}: ${reminderDate.toLocaleDateString('fr-FR')}`);
+          }
+        }
+      });
 
       // Group quotes by base ID to identify versions
       const versionGroups: { [baseId: string]: Quote[] } = {};
@@ -282,12 +299,14 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
   // Load a quote
   const handleLoadQuote = async (quoteId: string) => {
     try {
-      // First load the quote data
+      const quote = quotes.find(q => q.id === quoteId);
+      if (!quote) {
+        throw new Error('Quote not found');
+      }
       await loadQuote(quoteId);
-      // Then navigate to the home page where the quote will be displayed
-      onNavigate('/');
+      onNavigate(`/quote?id=${quoteId}&fromHistory=true&confirmed=${quote.confirmed || false}`);
     } catch (error) {
-      console.error('Error loading quote:', error);
+      console.error('Failed to load quote:', error);
       alert('Erreur lors du chargement du devis');
     }
   };
@@ -412,6 +431,83 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
       priceOfferService.createFromQuote(quote);
     }
     onNavigate('/price-offer', quote.id);
+  };
+
+  const handleSetReminder = async (quoteId: string, durationDays: number) => {
+    try {
+      // Calculate the reminder date by adding duration to current date
+      const currentDate = new Date();
+      const reminderDate = new Date(currentDate.setDate(currentDate.getDate() + durationDays));
+
+      // Format the date to YYYY-MM-DD for the database
+      const formattedDate = reminderDate.toISOString().split('T')[0];
+
+      // Make API call to update reminder date
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/quotes/${quoteId}/reminder`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reminderDate: formattedDate }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to set reminder date');
+      }
+
+      // Update local state if needed
+      // You might want to refresh the quotes list or update the specific quote
+      const updatedQuotes = quotes.map(q => {
+        if (q.id === quoteId) {
+          return { ...q, reminderDate: formattedDate };
+        }
+        return q;
+      });
+      setQuotes(updatedQuotes);
+
+      // Show success message
+      alert('Rappel configuré avec succès');
+    } catch (error) {
+      console.error('Error setting reminder:', error);
+      alert('Erreur lors de la configuration du rappel');
+    }
+  };
+
+  // Helper function to get version from ID
+  const getVersionFromId = (id: string): string => {
+    const parts = id.split('-');
+    return parts[parts.length - 1];
+  };
+
+  const handleConfirmQuote = async (quoteId: string) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/quotes/${quoteId}/confirm`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ confirmed: true }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to confirm quote');
+      }
+
+      // Update local state to reflect the change
+      const updatedQuotes = quotes.map(q => {
+        if (q.id === quoteId) {
+          return { ...q, confirmed: true };
+        }
+        return q;
+      });
+      setQuotes(updatedQuotes);
+
+      // Show success message
+      alert('Devis confirmé avec succès');
+    } catch (error) {
+      console.error('Error confirming quote:', error);
+      alert('Erreur lors de la confirmation du devis');
+    }
   };
 
   return (
@@ -551,9 +647,15 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <Typography variant="h6" component="div">
-                            {formatQuoteId(quote.id)}
+                            {`F-${quote.id.split('-').slice(0, -1).join('-')}`}
                           </Typography>
-                          {getVersionLabel(quote.id)}
+                          <Typography
+                            variant="caption"
+                            className={`version-badge ${getVersionFromId(quote.id) === '000' ? 'original' : 'update'}`}
+                            sx={{ ml: 1 }}
+                          >
+                            Version {parseInt(getVersionFromId(quote.id))}
+                          </Typography>
                           <Box className="version-actions">
                             {/* We don't need any buttons here since this is the filtered view */}
                           </Box>
@@ -602,6 +704,37 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                           </Typography>
                         </Box>
                       </Box>
+
+                      <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        mt: 2,
+                        borderTop: '1px solid rgba(0, 0, 0, 0.12)',
+                        paddingTop: 2
+                      }}>
+                        <CustomNumberInput
+                          label="Jours de rappel"
+                          value={quote.tempReminderDays || 0}
+                          onChange={(value) => {
+                            quote.tempReminderDays = value;
+                            // Force re-render
+                            setQuotes([...quotes]);
+                          }}
+                          min={1}
+                          step={1}
+                          margin="dense"
+                          variant="outlined"
+                        />
+                        <IconButton
+                          color="primary"
+                          onClick={() => handleSetReminder(quote.id, quote.tempReminderDays || 0)}
+                          disabled={!quote.tempReminderDays || quote.tempReminderDays < 1}
+                          sx={{ ml: 1 }}
+                        >
+                          <AddAlarmIcon />
+                        </IconButton>
+                      </Box>
                     </CardContent>
 
                     <CardActions disableSpacing>
@@ -618,6 +751,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                         startIcon={<ReceiptLongOutlined />}
                         onClick={() => handleViewPriceOffer(quote)}
                         color="primary"
+                        sx={{ ml: 1 }}
                       >
                         Voir l'offre de prix
                       </Button>
@@ -651,17 +785,14 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                   <Box className="card-header">
                     <Box className="quote-id">
                       <Typography component="span" className="id-number">
-                        F-{quote.id}
+                        {`${quote.id.split('-').slice(0, -1).join('-')}`}
                       </Typography>
-                      {quote.id.endsWith('001') ? (
-                        <Typography component="span" className="version-label original">
-                          Version 1
-                        </Typography>
-                      ) : (
-                        <Typography component="span" className="version-label update">
-                          Version {parseInt(quote.id.slice(-3))}
-                        </Typography>
-                      )}
+                      <Typography
+                        component="span"
+                        className={`version-label ${getVersionFromId(quote.id) === '000' ? 'original' : 'update'}`}
+                      >
+                        Version {parseInt(getVersionFromId(quote.id))}
+                      </Typography>
                       {hasOtherVersions(quote.id) && (
                         <Button
                           size="small"
@@ -679,6 +810,18 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                         >
                           {isExpanded ? 'Replier' : 'Déplier'}
                         </Button>
+                      )}
+                      {quote.confirmed ? (
+                        <CheckCircleIcon
+                          color="success"
+                          sx={{ ml: 1, fontSize: '1.2rem' }}
+                          titleAccess="Devis confirmé"
+                        />
+                      ) : (
+                        <CheckCircleOutlineIcon
+                          sx={{ ml: 1, fontSize: '1.2rem', color: 'rgba(0, 0, 0, 0.26)' }}
+                          titleAccess="Devis non confirmé"
+                        />
                       )}
                     </Box>
                     <Typography variant="caption" color="text.secondary">
@@ -712,6 +855,37 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                         </Typography>
                       </Box>
                     </Box>
+
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      mt: 2,
+                      borderTop: '1px solid rgba(0, 0, 0, 0.12)',
+                      paddingTop: 2
+                    }}>
+                      <CustomNumberInput
+                        label="Jours de rappel"
+                        value={quote.tempReminderDays || 0}
+                        onChange={(value) => {
+                          quote.tempReminderDays = value;
+                          // Force re-render
+                          setQuotes([...quotes]);
+                        }}
+                        min={1}
+                        step={1}
+                        margin="dense"
+                        variant="outlined"
+                      />
+                      <IconButton
+                        color="primary"
+                        onClick={() => handleSetReminder(quote.id, quote.tempReminderDays || 0)}
+                        disabled={!quote.tempReminderDays || quote.tempReminderDays < 1}
+                        sx={{ ml: 1 }}
+                      >
+                        <AddAlarmIcon />
+                      </IconButton>
+                    </Box>
                   </Box>
 
                   <Box className="card-actions">
@@ -722,6 +896,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                     >
                       <VisibilityIcon fontSize="small" />
                     </IconButton>
+
                     <IconButton
                       className="action-button delete"
                       onClick={() => handleDeleteQuote(quote.id)}
