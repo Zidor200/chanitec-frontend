@@ -359,7 +359,7 @@ const quoteReducer = (state: QuoteState, action: QuoteAction): QuoteState => {
 interface QuoteContextProps {
   state: QuoteState;
   createNewQuote: () => void;
-  loadQuote: (id: string) => void;
+  loadQuote: (id: string, fromHistory?: boolean) => void;
   saveQuote: () => Promise<boolean>;
   updateQuote: () => Promise<boolean>;
   setQuoteField: <K extends keyof Quote>(field: K, value: Quote[K]) => void;
@@ -415,16 +415,40 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
   };
 
   // Load a quote by ID
-  const loadQuote = async (id: string) => {
+  const loadQuote = async (id: string, fromHistory: boolean = false) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const quote = await apiService.getQuoteById(id);
       if (!quote) {
         throw new Error('Quote not found');
       }
-      dispatch({ type: 'SET_ORIGINAL_QUOTE_ID', payload: id });
-      dispatch({ type: 'SET_QUOTE', payload: quote });
-      dispatch({ type: 'SET_EXISTING_QUOTE', payload: true });
+
+      if (fromHistory) {
+        // Generate a new ID with incremented version when loading from history
+        const baseId = extractBaseId(id);
+        if (!baseId) {
+          throw new Error('Invalid quote ID format');
+        }
+        const nextVersion = getNextVersion(id);
+        const newId = generateQuoteId(baseId, nextVersion);
+
+        // Create a new quote with the incremented ID
+        const newQuote = {
+          ...quote,
+          id: newId,
+          confirmed: false,
+          version: nextVersion
+        };
+
+        dispatch({ type: 'SET_ORIGINAL_QUOTE_ID', payload: id });
+        dispatch({ type: 'SET_QUOTE', payload: newQuote });
+        dispatch({ type: 'SET_EXISTING_QUOTE', payload: true });
+      } else {
+        dispatch({ type: 'SET_ORIGINAL_QUOTE_ID', payload: id });
+        dispatch({ type: 'SET_QUOTE', payload: quote });
+        dispatch({ type: 'SET_EXISTING_QUOTE', payload: true });
+      }
+
       dispatch({ type: 'SET_ERROR', payload: null });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to load quote' });

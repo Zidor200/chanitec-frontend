@@ -46,7 +46,6 @@ const HomePage: React.FC = () => {
               fullWidth
               className="home-button"
               onClick={() => handleNavigate('/org-chart')}
-              disabled
             >
               Organigramme
             </Button>
