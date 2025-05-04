@@ -208,7 +208,7 @@ const QuoteActions: React.FC<QuoteActionsProps> = ({
             color="primary"
             className="action-button update-button"
             startIcon={<UpdateIcon />}
-            onClick={handleUpdate}
+            onClick={handleSave}
           >
             Mettre à jour
           </Button>

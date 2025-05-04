@@ -31,7 +31,8 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
     removeLaborItem,
     recalculateTotals,
     clearQuote,
-    loadQuote
+    loadQuote,
+    updateSupplyItem
   } = useQuote();
 
   const { currentQuote, isLoading, isExistingQuote, originalQuoteId } = state;
@@ -46,7 +47,9 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
   // Load quote if ID is provided in URL
   useEffect(() => {
     if (quoteId && !currentQuote && !isLoading) {
-      loadQuote(quoteId);
+      const queryParams = new URLSearchParams(window.location.search);
+      const fromHistory = queryParams.get('fromHistory') === 'true';
+      loadQuote(quoteId, fromHistory);
     }
   }, [quoteId, isLoading, loadQuote]);
 
@@ -166,6 +169,7 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
           onUpdateDescription={(value) => setQuoteField('supplyDescription', value)}
           onUpdateExchangeRate={(value) => setQuoteField('supplyExchangeRate', value)}
           onUpdateMarginRate={(value) => setQuoteField('supplyMarginRate', value)}
+          onUpdateSupplyItem={updateSupplyItem}
         />
 
         <LaborSection

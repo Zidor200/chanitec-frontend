@@ -20,7 +20,8 @@ import {
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
-  Search as SearchIcon
+  Search as SearchIcon,
+  Edit as EditIcon
 } from '@mui/icons-material';
 import { SupplyItem } from '../../models/Quote';
 import { apiService } from '../../services/api-service';
@@ -39,6 +40,7 @@ interface SuppliesSectionProps {
   onUpdateDescription: (description: string) => void;
   onUpdateExchangeRate: (rate: number) => void;
   onUpdateMarginRate: (rate: number) => void;
+  onUpdateSupplyItem: (item: SupplyItem) => void;
 }
 
 const SuppliesSection: React.FC<SuppliesSectionProps> = ({
@@ -51,7 +53,8 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
   onRemoveItem,
   onUpdateDescription,
   onUpdateExchangeRate,
-  onUpdateMarginRate
+  onUpdateMarginRate,
+  onUpdateSupplyItem
 }) => {
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [catalogItems, setCatalogItems] = useState<SupplyItem[]>([]);
@@ -62,6 +65,9 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
   const [customPriceDialogOpen, setCustomPriceDialogOpen] = useState(false);
   const [customPrice, setCustomPrice] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [editPriceDialogOpen, setEditPriceDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<SupplyItem | null>(null);
+  const [editPrice, setEditPrice] = useState<number>(0);
 
   // Load catalog items on component mount
   useEffect(() => {
@@ -183,6 +189,29 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
     }
   };
 
+  const handleOpenEditPriceDialog = (item: SupplyItem) => {
+    setEditingItem(item);
+    setEditPrice(item.priceEuro);
+    setEditPriceDialogOpen(true);
+  };
+
+  const handleCloseEditPriceDialog = () => {
+    setEditPriceDialogOpen(false);
+    setEditingItem(null);
+    setEditPrice(0);
+  };
+
+  const handleUpdatePrice = () => {
+    if (editingItem) {
+      const updatedItem = {
+        ...editingItem,
+        priceEuro: editPrice
+      };
+      onUpdateSupplyItem(updatedItem);
+      handleCloseEditPriceDialog();
+    }
+  };
+
   return (
     <Paper className="supplies-section" elevation={2}>
       <Typography variant="h6" className="section-title">
@@ -267,6 +296,13 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
                   <TableCell align="right">{Number(item.unitPriceDollar || 0).toFixed(2)}</TableCell>
                   <TableCell align="right">{Number(item.totalPriceDollar || 0).toFixed(2)}</TableCell>
                   <TableCell align="center">
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={() => handleOpenEditPriceDialog(item)}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
                     <IconButton
                       size="small"
                       color="error"
@@ -422,6 +458,43 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
             disabled={customPrice <= 0}
           >
             Ajouter
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Price Dialog */}
+      <Dialog
+        open={editPriceDialogOpen}
+        onClose={handleCloseEditPriceDialog}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Modifier le prix</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="textSecondary" paragraph>
+            Article: {editingItem?.description}
+          </Typography>
+          <CustomNumberInput
+            label="Prix (€)"
+            value={editPrice}
+            onChange={setEditPrice}
+            min={0.01}
+            step={0.01}
+            fullWidth
+            margin="normal"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseEditPriceDialog} color="primary">
+            Annuler
+          </Button>
+          <Button
+            onClick={handleUpdatePrice}
+            color="primary"
+            variant="contained"
+            disabled={editPrice <= 0}
+          >
+            Mettre à jour
           </Button>
         </DialogActions>
       </Dialog>

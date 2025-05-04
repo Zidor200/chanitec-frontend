@@ -14,6 +14,7 @@ import HomePage from './pages/HomePage/HomePage';
 import QuoteTest from './pages/QuoteTest/QuoteTest';
 import InterventionPage from './pages/interventionPage';
 import { storageService } from './services/storage-service';
+import OrgChartPage from './pages/orgChartPage';
 import './App.scss';
 
 const theme = createTheme({
@@ -253,6 +254,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <InterventionPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/org-chart"
+              element={
+                <ProtectedRoute>
+                  <OrgChartPage />
                 </ProtectedRoute>
               }
             />
