@@ -423,32 +423,10 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
         throw new Error('Quote not found');
       }
 
-      if (fromHistory) {
-        // Generate a new ID with incremented version when loading from history
-        const baseId = extractBaseId(id);
-        if (!baseId) {
-          throw new Error('Invalid quote ID format');
-        }
-        const nextVersion = getNextVersion(id);
-        const newId = generateQuoteId(baseId, nextVersion);
-
-        // Create a new quote with the incremented ID
-        const newQuote = {
-          ...quote,
-          id: newId,
-          confirmed: false,
-          version: nextVersion
-        };
-
-        dispatch({ type: 'SET_ORIGINAL_QUOTE_ID', payload: id });
-        dispatch({ type: 'SET_QUOTE', payload: newQuote });
-        dispatch({ type: 'SET_EXISTING_QUOTE', payload: true });
-      } else {
-        dispatch({ type: 'SET_ORIGINAL_QUOTE_ID', payload: id });
-        dispatch({ type: 'SET_QUOTE', payload: quote });
-        dispatch({ type: 'SET_EXISTING_QUOTE', payload: true });
-      }
-
+      // Always use the original quote ID, regardless of where it's loaded from
+      dispatch({ type: 'SET_ORIGINAL_QUOTE_ID', payload: id });
+      dispatch({ type: 'SET_QUOTE', payload: quote });
+      dispatch({ type: 'SET_EXISTING_QUOTE', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to load quote' });
