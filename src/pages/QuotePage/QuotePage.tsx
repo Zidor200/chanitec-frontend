@@ -126,7 +126,7 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
 
   return (
     <Layout currentPath={currentPath} onNavigate={onNavigate} onLogout={onLogout} onHomeClick={handleHomeClick}>
-      <Box sx={{ display: 'flex', position: 'relative', width: '100%' , backgroundColor: 'white' , color: 'black'}} className="page-header">
+      <Box sx={{ display: 'flex', position: 'relative', width: '100%' , backgroundColor: 'white' , color: 'black',height:'20%'}} className="page-header">
         <Box sx={{ position: 'absolute', left: 0 }}>
           <img
             src={logo}
@@ -138,11 +138,7 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
           <Typography variant="h6" component="h1" className="page-title">
             CALCUL DE PRIX OFFRE CLIMATISATION
           </Typography>
-          {isExistingQuote && originalQuoteId && (
-            <Typography variant="subtitle1" color="text.secondary" className="original-quote-id">
-              Devis: {originalQuoteId}
-            </Typography>
-          )}
+
         </Box>
       </Box>
       <Container ref={contentRef} className="quote-content">

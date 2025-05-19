@@ -28,6 +28,8 @@ import { extractBaseId, extractVersion } from '../../utils/id-generator';
 import './HistoryPage.scss';
 import { ReceiptLongOutlined } from '@mui/icons-material';
 import { priceOfferService } from '../../services/price-offer-service';
+
+import logo from '../../logo.png';
 import AddAlarmIcon from '@mui/icons-material/AddAlarm';
 import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberInput';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -513,12 +515,20 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
   return (
     <Layout currentPath={currentPath} onNavigate={onNavigate}>
       <Container maxWidth="lg" className="history-page">
+      <Box sx={{ display: 'flex', position: 'relative', width: '100%' , backgroundColor: 'white' , color: 'black'}} className="page-header">
+      <Box sx={{ position: 'absolute', left: 0 }}>
+          <img
+            src={logo}
+            alt="Logo"
+            style={{ height: '60px' }}
+          />
+        </Box>
         <Box className="page-header">
           <Typography variant="h6" className="header-title">
             HISTORIQUE
           </Typography>
         </Box>
-
+         </Box>
         <Paper elevation={3} className="filters-section">
           <Typography variant="h6" gutterBottom>
             Filtres
@@ -889,21 +899,34 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                   </Box>
 
                   <Box className="card-actions">
-                    <IconButton
+                    <Button
                       className="action-button view"
                       onClick={() => handleLoadQuote(quote.id)}
                       size="small"
+                      startIcon={<VisibilityIcon />}
                     >
-                      <VisibilityIcon fontSize="small" />
-                    </IconButton>
+                      Voir
+                    </Button>
 
-                    <IconButton
+                    <Button
+                      className="action-button"
+                      onClick={() => handleViewPriceOffer(quote)}
+                      size="small"
+                      color="primary"
+                      startIcon={<ReceiptLongOutlined />}
+                    >
+                      Voir l'offre de prix
+                    </Button>
+
+                    <Button
                       className="action-button delete"
                       onClick={() => handleDeleteQuote(quote.id)}
                       size="small"
+                      color="error"
+                      startIcon={<DeleteIcon />}
                     >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+                      Supprimer
+                    </Button>
                   </Box>
                 </Card>
               );

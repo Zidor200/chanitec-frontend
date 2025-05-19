@@ -17,54 +17,53 @@ const generateRandomDigits = (length: number): string => {
 };
 
 /**
- * Generates a quote ID with F-prefix followed by 8 random digits and version number
- * Format: F-[random 8 digits]-[version number]
- * @param baseId Optional base ID to use for versioning
- * @param version Optional version number (defaults to 0)
+ * Generates a quote ID with F-prefix followed by 8 random digits
+ * Format: F-[random 8 digits]
+ * @param baseId Optional base ID to use
  */
-export const generateQuoteId = (baseId?: string, version: number = 0): string => {
+export const generateQuoteId = (baseId?: string): string => {
   // If a baseId is provided, use it, otherwise generate a new one
   const randomPart = baseId || generateRandomDigits(8);
+  return `F-${randomPart}`;
+};
 
-  // Always include version number, even if it's 0
-  return `F-${randomPart}-${version}`;
+/**
+ * Formats a quote ID with its version number for display
+ * Format: F-[random 8 digits]-[version]
+ */
+export const formatQuoteId = (baseId: string, version: number): string => {
+  const paddedVersion = version.toString().padStart(3, '0');
+  return `${baseId}-${paddedVersion}`;
 };
 
 /**
  * Extracts the base ID (8 digits) from a quote ID
- * @param quoteId The full quote ID in format F-[random 8 digits]-[version number]
+ * @param quoteId The full quote ID in format F-[random 8 digits] or F-[random 8 digits]-[version]
  * @returns The 8-digit base ID or null if the format is invalid
  */
 export const extractBaseId = (quoteId: string): string | null => {
-  // More flexible regex to handle various formats
-  const match = quoteId.match(/^F-(\d{8})(?:-(\d+))?$/);
+  // Match both formats: F-12345678 and F-12345678-001
+  const match = quoteId.match(/^F-(\d{8})(?:-\d+)?$/);
   return match ? match[1] : null;
 };
 
 /**
  * Extracts the version number from a quote ID
- * @param quoteId The full quote ID in format F-[random 8 digits]-[version number]
+ * @param quoteId The full quote ID in format F-[random 8 digits]-[version]
  * @returns The version number as a number or null if the format is invalid
  */
 export const extractVersion = (quoteId: string): number | null => {
-  // More flexible regex to handle various formats
   const match = quoteId.match(/^F-\d{8}-(\d+)$/);
-  if (!match) {
-    // Check if it's a base ID without version
-    const baseMatch = quoteId.match(/^F-\d{8}$/);
-    return baseMatch ? 0 : null;
-  }
-  return parseInt(match[1], 10);
+  return match ? parseInt(match[1], 10) : null;
 };
 
 /**
  * Gets the next version number for a quote
- * @param quoteId The current quote ID
- * @returns The next version number (0 for new quotes, current version + 1 for existing)
+ * @param currentVersion The current version number
+ * @returns The next version number
  */
-export const getNextVersion = (quoteId: string): number => {
-  const currentVersion = extractVersion(quoteId);
-  return currentVersion === null ? 0 : currentVersion + 1;
+export const getNextVersion = (currentVersion: number): number => {
+  return currentVersion + 1;
 };
 
 /**
