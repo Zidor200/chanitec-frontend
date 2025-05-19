@@ -142,24 +142,7 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
   return (
     <Layout currentPath={currentPath} onNavigate={onNavigate}>
       <Container maxWidth="lg" className="price-offer-page">
-        <Box className="actions-bar" sx={{ mb: 2 }}>
-          <Button
-            variant="contained"
-            startIcon={<PrintOutlined />}
-            onClick={handlePrint}
-            sx={{ mr: 1 }}
-          >
-            Imprimer
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<Download />}
-            onClick={handleDownloadPDF}
-            sx={{ mr: 1 }}
-          >
-            Télécharger PDF
-          </Button>
-        </Box>
+
 
         {/* Wrap the PDF content in a plain div with the ref */}
         <div ref={contentRef}>
@@ -289,6 +272,24 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
             </Box>
           </Paper>
         </div>
+        <Box className="actions-bar" sx={{ mb: 2 }}>
+          <Button
+            variant="contained"
+            startIcon={<PrintOutlined />}
+            onClick={handlePrint}
+            sx={{ mr: 1 }}
+          >
+            Imprimer
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<Download />}
+            onClick={handleDownloadPDF}
+            sx={{ mr: 1 }}
+          >
+            Télécharger PDF
+          </Button>
+        </Box>
       </Container>
     </Layout>
   );
