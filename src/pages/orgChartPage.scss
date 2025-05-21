@@ -90,19 +90,48 @@
   margin: 18px 0 24px 0;
 }
 
-.orgchart-advisors {
+.orgchart-sections {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 18px;
+  justify-content: space-between;
+  gap: 100px;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1400px;
+  padding: 0 20px;
+}
+
+.orgchart-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+  min-width: 0;
+}
+
+.orgchart-section-title {
+  font-size: 1.5rem;
+  color: #333;
+  text-align: center;
+  margin: 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.orgchart-advisors {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.orgchart-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
 }
 
 .orgchart-card.advisor {
-  min-width: 170px;
-  max-width: 200px;
+  min-width: 150px;
+  max-width: 180px;
   padding: 20px 10px 14px 10px;
 }
 

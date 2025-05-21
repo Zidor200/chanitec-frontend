@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Container, Button, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import LogoutIcon from '@mui/icons-material/Logout';
 import logo from '../../logo.png';
 import './HomePage.scss';
 
@@ -11,8 +12,23 @@ const HomePage: React.FC = () => {
     navigate(path);
   };
 
+  const handleLogout = () => {
+    // Add logout logic here
+    navigate('/login');
+  };
+
   return (
     <Box className="home-container">
+      <Box className="logout-button-container">
+        <Button
+          color="primary"
+          className="logout-button"
+          startIcon={<LogoutIcon />}
+          onClick={handleLogout}
+        >
+          Déconnexion
+        </Button>
+      </Box>
       <Container maxWidth="md">
         <Box className="home-header">
           <img
