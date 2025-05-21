@@ -220,7 +220,7 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
               size={24}
               style={{
                 position: 'absolute',
-                right: 12,
+                right: 8,
                 top: '50%',
                 marginTop: -12
               }}
