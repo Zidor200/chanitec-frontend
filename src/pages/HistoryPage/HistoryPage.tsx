@@ -515,15 +515,13 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
   return (
     <Layout currentPath={currentPath} onNavigate={onNavigate}>
       <Container maxWidth="lg" className="history-page">
-      <Box sx={{ display: 'flex', position: 'relative', width: '100%' , backgroundColor: 'white' , color: 'black'}} className="page-header">
-      <Box sx={{ position: 'absolute', left: 0 }}>
+      <Box sx={{ display: 'flex', position: 'relative', width: '100%',height: '80px', backgroundColor: 'white' , color: 'black'}} className="page-header">
+        <Box sx={{ position: 'absolute', left: 0 , display: 'flex', alignItems: 'center',gap: 40 }}>
           <img
             src={logo}
             alt="Logo"
             style={{ height: '60px' }}
           />
-        </Box>
-        <Box className="page-header">
           <Typography variant="h6" className="header-title">
             HISTORIQUE
           </Typography>

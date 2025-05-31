@@ -215,6 +215,9 @@ const OrgChartPage = () => {
           <Button color="inherit" onClick={() => navigate('/home')} className="orgchart-nav-btn">
             Back to Home
           </Button>
+          <Button color="inherit" onClick={() => navigate('/employees')} className="orgchart-nav-btn">
+            Employees
+          </Button>
           <Button color="inherit" disabled className="orgchart-nav-btn">
             Profile
           </Button>

@@ -15,6 +15,7 @@ import QuoteTest from './pages/QuoteTest/QuoteTest';
 import InterventionPage from './pages/interventionPage';
 import { storageService } from './services/storage-service';
 import OrgChartPage from './pages/orgChartPage';
+import EmployeesPage from './pages/employeesPage';
 import './App.scss';
 
 const theme = createTheme({
@@ -263,6 +264,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <OrgChartPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/employees"
+              element={
+                <ProtectedRoute>
+                  <EmployeesPage />
                 </ProtectedRoute>
               }
             />
