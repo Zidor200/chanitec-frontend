@@ -34,7 +34,7 @@ import { itemsApi } from '../../services/api';
 import './ItemsPage.scss';
 import { v4 as uuidv4 } from 'uuid';
 import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberInput';
-
+import logo from '../../logo.png';
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 
@@ -464,19 +464,23 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
 
   return (
     <Layout currentPath={currentPath} onNavigate={onNavigate}>
-      <Box className="page-header">
-        <Typography variant="h6" component="h1" className="page-title">
-          GESTION DES ARTICLES
-        </Typography>
-      </Box>
+      <Box sx={{ display: 'flex', position: 'relative', width: '100%',height: '80px', backgroundColor: '#1976d2' , color: 'white'}} className="page-header">
+        <Box sx={{ position: 'absolute', left: 0 , display: 'flex', alignItems: 'center',gap: 25 }}>
+          <img
+            src={logo}
+            alt="Logo"
+            style={{ height: '60px' }}
+          />
+          <Typography variant="h6" className="header-title">
+          ARTICLES DE FOURNITURE
+          </Typography>
+        </Box>
+         </Box>
       <Container className="items-page-container">
         <Paper elevation={2} className="items-paper">
           <Box className="items-header">
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="h6" className="section-title">
-                ARTICLES DE FOURNITURE
-              </Typography>
-              <Typography variant="subtitle1" sx={{ color: 'text.secondary' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="subtitle1" sx={{ color: 'text.secondary',marginRight: 2 }}>
                 ({items.length} articles)
               </Typography>
             </Box>

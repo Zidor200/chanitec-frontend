@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+
+import logo from '../../logo.png';
 import {
   Box,
   Button,
@@ -384,17 +386,18 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
 
   return (
     <Layout currentPath={currentPath} onNavigate={onNavigate}>
-      <Box sx={{
-        bgcolor: '#1976d2',
-        color: 'white',
-        py: 2,
-        mb: 3,
-        textAlign: 'center'
-      }}>
-        <Typography variant="h5" fontWeight="bold">
-          CLIENTS ET SITES
-        </Typography>
-      </Box>
+        <Box sx={{ display: 'flex', position: 'relative', width: '100%',height: '80px', backgroundColor: '#1976d2' , color: 'white'}} className="page-header">
+        <Box sx={{ position: 'absolute', left: 0 , display: 'flex', alignItems: 'center',gap: 25 }}>
+          <img
+            src={logo}
+            alt="Logo"
+            style={{ height: '60px' }}
+          />
+          <Typography variant="h6" className="header-title">
+            Clients et Sites
+          </Typography>
+        </Box>
+         </Box>
 
       <Container maxWidth="lg" sx={{ mb: 4 }}>
         <Paper sx={{ p: 3, borderRadius: 2 }}>
