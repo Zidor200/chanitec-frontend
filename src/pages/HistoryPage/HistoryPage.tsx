@@ -655,14 +655,14 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <Typography variant="h6" component="div">
-                            {`F-${quote.id.split('-').slice(0, -1).join('-')}`}
+                            {`${quote.id}`}
                           </Typography>
                           <Typography
                             variant="caption"
-                            className={`version-badge ${getVersionFromId(quote.id) === '000' ? 'original' : 'update'}`}
+                            className={`version-badge ${quote.version === 0 ? 'original' : 'update'}`}
                             sx={{ ml: 1 }}
                           >
-                            Version {parseInt(getVersionFromId(quote.id))}
+                            Version {quote.version}
                           </Typography>
                           <Box className="version-actions">
                             {/* We don't need any buttons here since this is the filtered view */}
@@ -793,13 +793,13 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                   <Box className="card-header">
                     <Box className="quote-id">
                       <Typography component="span" className="id-number">
-                        {`${quote.id.split('-').slice(0, -1).join('-')}`}
+                        {`${quote.id}`}
                       </Typography>
                       <Typography
                         component="span"
-                        className={`version-label ${getVersionFromId(quote.id) === '000' ? 'original' : 'update'}`}
+                        className={`version-label ${quote.version === 0 ? 'original' : 'update'}`}
                       >
-                        Version {parseInt(getVersionFromId(quote.id))}
+                        Version {quote.version}
                       </Typography>
                       {hasOtherVersions(quote.id) && (
                         <Button
