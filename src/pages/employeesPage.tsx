@@ -29,8 +29,9 @@ import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/ico
 import { useNavigate } from 'react-router-dom';
 import { employeeService, Employee, CreateEmployeeDTO } from '../services/employee-service';
 import './employeesPage.scss';
+import dayjs from 'dayjs';
 
-const civilStatusOptions = ['C', 'M', 'S', 'D']; // Celibataire, Marié, Séparé, Divorcé
+const civilStatusOptions = ['C', 'M']; // Celibataire, Marié
 const contractTypeOptions = ['CDI', 'CDD', 'Interim'];
 
 const EmployeesPage = () => {
@@ -164,6 +165,31 @@ const EmployeesPage = () => {
     }
   };
 
+  const calculateSeniority = (entryDate: string) => {
+    if (!entryDate) return '';
+    const start = dayjs(entryDate);
+    const end = dayjs();
+    const years = end.diff(start, 'year');
+    const months = end.diff(start.add(years, 'year'), 'month');
+    const days = end.diff(start.add(years, 'year').add(months, 'month'), 'day');
+    return `${years} years ${months} months ${days} days`;
+  };
+
+  const getTypeDescription = (subTypeId: number | undefined) => {
+    switch (subTypeId) {
+      case 1:
+        return 'Chef de service Chargé de clim-domestique';
+      case 2:
+        return 'Polyvalent';
+      case 3:
+      case 4:
+      case 5:
+        return 'Chef de service adj chargé du climatisation centralisé';
+      default:
+        return '';
+    }
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -263,11 +289,8 @@ const EmployeesPage = () => {
                 onChange={handleSelectChange}
                 label="Civil Status"
               >
-                {civilStatusOptions.map((status) => (
-                  <MenuItem key={status} value={status}>
-                    {status}
-                  </MenuItem>
-                ))}
+                <MenuItem value="C">C</MenuItem>
+                <MenuItem value="M">M</MenuItem>
               </Select>
             </FormControl>
             <TextField
@@ -293,10 +316,9 @@ const EmployeesPage = () => {
             <TextField
               name="seniority"
               label="Seniority"
-              value={formData.seniority}
-              onChange={handleTextChange}
+              value={calculateSeniority(formData.entry_date)}
               fullWidth
-              required
+              disabled
             />
             <FormControl fullWidth required>
               <InputLabel>Contract Type</InputLabel>
@@ -329,22 +351,33 @@ const EmployeesPage = () => {
               fullWidth
               required
             />
-            <TextField
-              name="sub_type_id"
-              label="Sub Type ID"
-              type="number"
-              value={formData.sub_type_id || ''}
-              onChange={handleTextChange}
-              fullWidth
-            />
+            <FormControl fullWidth required>
+              <InputLabel>Sub Type</InputLabel>
+              <Select
+                name="sub_type_id"
+                value={formData.sub_type_id !== undefined ? String(formData.sub_type_id) : ''}
+                onChange={(e) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    sub_type_id: e.target.value === '' ? undefined : Number(e.target.value),
+                  }));
+                }}
+                label="Sub Type"
+              >
+                <MenuItem value="1">UTEX</MenuItem>
+                <MenuItem value="2">POLIVALONT</MenuItem>
+                <MenuItem value="3">PULLMAN</MenuItem>
+                <MenuItem value="4">SNEL</MenuItem>
+                <MenuItem value="5">BCDC</MenuItem>
+                <MenuItem value="6">AUCUN</MenuItem>
+              </Select>
+            </FormControl>
             <TextField
               name="type_description"
               label="Type Description"
-              value={formData.type_description}
-              onChange={handleTextChange}
+              value={getTypeDescription(formData.sub_type_id)}
               fullWidth
-              multiline
-              rows={3}
+              disabled
             />
           </Box>
         </DialogContent>
