@@ -602,16 +602,15 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
             value={currentItem.description}
             onChange={handleInputChange}
           />
-          <TextField
-            margin="dense"
-            name="priceEuro"
+          <CustomNumberInput
             label="Prix (€)"
-            type="number"
+            value={currentItem.priceEuro || 0}
+            onChange={(value) => setCurrentItem({ ...currentItem, priceEuro: value })}
+            step={0.01}
+            min={0}
             fullWidth
+            margin="dense"
             variant="outlined"
-            value={currentItem.priceEuro}
-            onChange={handleInputChange}
-            inputProps={{ step: "0.01" }}
           />
         </DialogContent>
         <DialogActions>
