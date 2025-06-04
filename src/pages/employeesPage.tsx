@@ -18,227 +18,87 @@ import {
   TextField,
   Box,
   Typography,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  SelectChangeEvent,
+  CircularProgress,
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { employeeService, Employee, CreateEmployeeDTO } from '../services/employee-service';
 import './employeesPage.scss';
 
-interface Employee {
-  id: number;
-  name: string;
-  title: string;
-  location: string;
-  avatar: string;
-  subType?: string;
-  children?: Employee[];
-}
-
-// Initial data from org chart
-const initialData: Employee[] = [
-  {
-    id: 1,
-    name: 'Bilel AYACHI',
-    title: 'Departement Froid et climatisation',
-    location: 'TUN Tunis - Extension',
-    avatar: 'https://randomuser.me/api/portraits/men/61.jpg',
-    children: [
-      {
-        id: 2,
-        name: 'BALU MAVINGA Jean',
-        title: 'Chef de service Chargé de clim-domestique',
-        subType: 'UTEX',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/62.jpg',
-      },
-      {
-        id: 3,
-        name: 'IKALABA NKOSI Louison',
-        title: 'Chef de service Chargé de clim-domestique',
-        subType: 'UTEX',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/63.jpg',
-      },
-      {
-        id: 4,
-        name: 'MATALATALA WISAMAU Richard',
-        title: 'Chef de service Chargé de clim-domestique',
-        subType: 'UTEX',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/64.jpg',
-      },
-      {
-        id: 5,
-        name: 'MBENZA VUAMISA Willy',
-        title: 'Chef de service Chargé de clim-domestique',
-        subType: 'SNEL',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/65.jpg',
-      },
-      {
-        id: 6,
-        name: 'MFIKA MFUNDU KIMPEMBE Roc',
-        title: 'Chef de service Chargé de clim-domestique',
-        subType: 'UTEX',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/66.jpg',
-      },
-      {
-        id: 7,
-        name: 'TOKO ZABANA Juvénal',
-        title: 'Chef de service Chargé de clim-domestique',
-        subType: 'UTEX',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/67.jpg',
-      },
-      {
-        id: 8,
-        name: 'KAKUTALUA NGUVU Bienvenu',
-        title: 'Polyvalent',
-        subType: 'POLIVALONT',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/68.jpg',
-      },
-      {
-        id: 9,
-        name: 'KAMAKAMA MBALA Joseph',
-        title: 'Polyvalent',
-        subType: 'POLIVALONT',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/69.jpg',
-      },
-      {
-        id: 10,
-        name: 'KUMBANA MOYO Beckers',
-        title: 'Polyvalent',
-        subType: 'POLIVALONT',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/70.jpg',
-      },
-      {
-        id: 11,
-        name: 'LUVUALU Thomas',
-        title: 'Polyvalent',
-        subType: 'POLIVALONT',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/71.jpg',
-      },
-      {
-        id: 12,
-        name: 'MENANKUTIMA NSOMI Marc',
-        title: 'Polyvalent',
-        subType: 'POLIVALONT',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/72.jpg',
-      },
-      {
-        id: 13,
-        name: 'MOBATUE MBEMBA Rigaen',
-        title: 'Polyvalent',
-        subType: 'POLIVALONT',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/73.jpg',
-      },
-      {
-        id: 14,
-        name: 'DIANABO KALIMUNDA Marius',
-        title: 'Chef de service adj chargé du climatisation centralisé',
-        subType: 'PULLMAN',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/74.jpg',
-      },
-      {
-        id: 15,
-        name: 'MALONGA KUAMA Isidore',
-        title: 'Chef de service adj chargé du climatisation centralisé',
-        subType: 'PULLMAN',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/75.jpg',
-      },
-      {
-        id: 16,
-        name: 'MBIYAVANGA MATALA Antoine',
-        title: 'Chef de service adj chargé du climatisation centralisé',
-        subType: 'PULLMAN',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/76.jpg',
-      },
-      {
-        id: 17,
-        name: 'MUSOMONI KAFUTI Trésor-Benjamin',
-        title: 'Chef de service adj chargé du climatisation centralisé',
-        subType: 'BCDC',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/77.jpg',
-      },
-      {
-        id: 18,
-        name: 'NDOMBASI NGOMBO Diego',
-        title: 'Chef de service adj chargé du climatisation centralisé',
-        subType: 'BCDC',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/78.jpg',
-      },
-      {
-        id: 19,
-        name: 'NTOTO PHUATI Sylvain',
-        title: 'Chef de service adj chargé du climatisation centralisé',
-        subType: 'BCDC',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/79.jpg',
-      },
-      {
-        id: 20,
-        name: 'SADI TONDASE Dodo',
-        title: 'Chef de service adj chargé du climatisation centralisé',
-        subType: 'BCDC',
-        location: 'TUN Tunis - Extension',
-        avatar: 'https://randomuser.me/api/portraits/men/80.jpg',
-      },
-    ],
-  },
-];
+const civilStatusOptions = ['C', 'M', 'S', 'D']; // Celibataire, Marié, Séparé, Divorcé
+const contractTypeOptions = ['CDI', 'CDD', 'Interim'];
 
 const EmployeesPage = () => {
   const navigate = useNavigate();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-  const [formData, setFormData] = useState<Partial<Employee>>({
-    name: '',
-    title: '',
-    location: '',
-    subType: '',
+  const [formData, setFormData] = useState<CreateEmployeeDTO>({
+    full_name: '',
+    civil_status: '',
+    birth_date: '',
+    entry_date: '',
+    seniority: '',
+    contract_type: '',
+    job_title: '',
+    fonction: '',
+    sub_type_id: undefined,
+    type_description: '',
   });
-
-  // Function to get all employees recursively
-  const getAllEmployees = (data: Employee[]): Employee[] => {
-    return data.reduce((acc: Employee[], employee) => {
-      const { children, ...employeeWithoutChildren } = employee;
-      acc.push(employeeWithoutChildren);
-      if (children) {
-        acc.push(...getAllEmployees(children));
-      }
-      return acc;
-    }, []);
-  };
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Initialize employees with all employees from the org chart
-    const allEmployees = getAllEmployees(initialData);
-    setEmployees(allEmployees);
+    loadEmployees();
   }, []);
+
+  const loadEmployees = async () => {
+    try {
+      setLoading(true);
+      const data = await employeeService.getAllEmployees();
+      setEmployees(data);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load employees');
+      console.error('Error loading employees:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenDialog = (employee?: Employee) => {
     if (employee) {
       setEditingEmployee(employee);
-      setFormData(employee);
+      setFormData({
+        full_name: employee.full_name,
+        civil_status: employee.civil_status,
+        birth_date: employee.birth_date,
+        entry_date: employee.entry_date,
+        seniority: employee.seniority,
+        contract_type: employee.contract_type,
+        job_title: employee.job_title,
+        fonction: employee.fonction,
+        sub_type_id: employee.sub_type_id,
+        type_description: employee.type_description,
+      });
     } else {
       setEditingEmployee(null);
       setFormData({
-        name: '',
-        title: '',
-        location: '',
-        subType: '',
+        full_name: '',
+        civil_status: '',
+        birth_date: '',
+        entry_date: '',
+        seniority: '',
+        contract_type: '',
+        job_title: '',
+        fonction: '',
+        sub_type_id: undefined,
+        type_description: '',
       });
     }
     setOpenDialog(true);
@@ -248,14 +108,20 @@ const EmployeesPage = () => {
     setOpenDialog(false);
     setEditingEmployee(null);
     setFormData({
-      name: '',
-      title: '',
-      location: '',
-      subType: '',
+      full_name: '',
+      civil_status: '',
+      birth_date: '',
+      entry_date: '',
+      seniority: '',
+      contract_type: '',
+      job_title: '',
+      fonction: '',
+      sub_type_id: undefined,
+      type_description: '',
     });
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -263,31 +129,56 @@ const EmployeesPage = () => {
     }));
   };
 
-  const handleSubmit = () => {
-    if (editingEmployee) {
-      // Update existing employee
-      setEmployees(prev =>
-        prev.map(emp =>
-          emp.id === editingEmployee.id ? { ...emp, ...formData } : emp
-        )
-      );
-    } else {
-      // Add new employee
-      const newEmployee: Employee = {
-        ...formData as Employee,
-        id: Date.now(), // Temporary ID generation
-        avatar: 'https://randomuser.me/api/portraits/men/1.jpg', // Default avatar
-      };
-      setEmployees(prev => [...prev, newEmployee]);
-    }
-    handleCloseDialog();
+  const handleSelectChange = (e: SelectChangeEvent<string>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const handleDelete = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this employee?')) {
-      setEmployees(prev => prev.filter(emp => emp.id !== id));
+  const handleSubmit = async () => {
+    try {
+      if (editingEmployee) {
+        await employeeService.updateEmployee(editingEmployee.id, formData);
+      } else {
+        await employeeService.createEmployee(formData);
+      }
+      await loadEmployees();
+      handleCloseDialog();
+    } catch (err) {
+      console.error('Error saving employee:', err);
+      setError('Failed to save employee');
     }
   };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm('Are you sure you want to delete this employee?')) {
+      try {
+        await employeeService.deleteEmployee(id);
+        await loadEmployees();
+      } catch (err) {
+        console.error('Error deleting employee:', err);
+        setError('Failed to delete employee');
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3, color: 'error.main' }}>
+        Error: {error}
+      </Box>
+    );
+  }
 
   return (
     <div className="employees-container">
@@ -317,33 +208,24 @@ const EmployeesPage = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Avatar</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell>Title</TableCell>
-                <TableCell>Location</TableCell>
-                <TableCell>Sub Type</TableCell>
+                <TableCell>Full Name</TableCell>
+                <TableCell>Civil Status</TableCell>
+                <TableCell>Job Title</TableCell>
+                <TableCell>Fonction</TableCell>
+                <TableCell>Contract Type</TableCell>
+                <TableCell>Seniority</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {employees.map((employee) => (
                 <TableRow key={employee.id}>
-                  <TableCell>
-                    <img
-                      src={employee.avatar}
-                      alt={employee.name}
-                      style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        objectFit: 'cover'
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>{employee.name}</TableCell>
-                  <TableCell>{employee.title}</TableCell>
-                  <TableCell>{employee.location}</TableCell>
-                  <TableCell>{employee.subType}</TableCell>
+                  <TableCell>{employee.full_name}</TableCell>
+                  <TableCell>{employee.civil_status}</TableCell>
+                  <TableCell>{employee.job_title}</TableCell>
+                  <TableCell>{employee.fonction}</TableCell>
+                  <TableCell>{employee.contract_type}</TableCell>
+                  <TableCell>{employee.seniority}</TableCell>
                   <TableCell>
                     <IconButton onClick={() => handleOpenDialog(employee)}>
                       <EditIcon />
@@ -359,39 +241,110 @@ const EmployeesPage = () => {
         </TableContainer>
       </Box>
 
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>
           {editingEmployee ? 'Edit Employee' : 'Add New Employee'}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
-              name="name"
-              label="Name"
-              value={formData.name}
-              onChange={handleInputChange}
+              name="full_name"
+              label="Full Name"
+              value={formData.full_name}
+              onChange={handleTextChange}
+              fullWidth
+              required
+            />
+            <FormControl fullWidth required>
+              <InputLabel>Civil Status</InputLabel>
+              <Select
+                name="civil_status"
+                value={formData.civil_status}
+                onChange={handleSelectChange}
+                label="Civil Status"
+              >
+                {civilStatusOptions.map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {status}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              name="birth_date"
+              label="Birth Date"
+              type="date"
+              value={formData.birth_date}
+              onChange={handleTextChange}
+              fullWidth
+              required
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              name="entry_date"
+              label="Entry Date"
+              type="date"
+              value={formData.entry_date}
+              onChange={handleTextChange}
+              fullWidth
+              required
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              name="seniority"
+              label="Seniority"
+              value={formData.seniority}
+              onChange={handleTextChange}
+              fullWidth
+              required
+            />
+            <FormControl fullWidth required>
+              <InputLabel>Contract Type</InputLabel>
+              <Select
+                name="contract_type"
+                value={formData.contract_type}
+                onChange={handleSelectChange}
+                label="Contract Type"
+              >
+                {contractTypeOptions.map((type) => (
+                  <MenuItem key={type} value={type}>
+                    {type}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              name="job_title"
+              label="Job Title"
+              value={formData.job_title}
+              onChange={handleTextChange}
+              fullWidth
+              required
+            />
+            <TextField
+              name="fonction"
+              label="Fonction"
+              value={formData.fonction}
+              onChange={handleTextChange}
+              fullWidth
+              required
+            />
+            <TextField
+              name="sub_type_id"
+              label="Sub Type ID"
+              type="number"
+              value={formData.sub_type_id || ''}
+              onChange={handleTextChange}
               fullWidth
             />
             <TextField
-              name="title"
-              label="Title"
-              value={formData.title}
-              onChange={handleInputChange}
+              name="type_description"
+              label="Type Description"
+              value={formData.type_description}
+              onChange={handleTextChange}
               fullWidth
-            />
-            <TextField
-              name="location"
-              label="Location"
-              value={formData.location}
-              onChange={handleInputChange}
-              fullWidth
-            />
-            <TextField
-              name="subType"
-              label="Sub Type"
-              value={formData.subType}
-              onChange={handleInputChange}
-              fullWidth
+              multiline
+              rows={3}
             />
           </Box>
         </DialogContent>

@@ -82,6 +82,32 @@ const QuoteActions: React.FC<QuoteActionsProps> = ({
     }
   };
 
+  // Handle save and print action
+  const handleSaveAndPrint = async () => {
+    try {
+      // First save the quote if it doesn't exist
+      if (!isExistingQuote) {
+        const success = await onSave();
+        if (!success) {
+          setSnackbarMessage('Erreur lors de l\'enregistrement du devis.');
+          setSnackbarSeverity('error');
+          setSnackbarOpen(true);
+          return;
+        }
+        setSnackbarMessage('Devis enregistré avec succès!');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
+      }
+
+      // Then proceed with print functionality
+      onPrint();
+    } catch (error) {
+      setSnackbarMessage('Erreur lors de l\'enregistrement du devis.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
+
   // Handle update action
   const handleUpdate = async () => {
     try {
@@ -229,7 +255,7 @@ const QuoteActions: React.FC<QuoteActionsProps> = ({
           color="info"
           className="action-button download-button"
           startIcon={<DownloadIcon />}
-          onClick={onPrint}
+          onClick={handleSaveAndPrint}
         >
           Enregistrer sous
         </Button>

@@ -222,16 +222,7 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
         onUpdate={updateQuote}
         onViewHistory={() => onNavigate('/history')}
         contentRef={contentRef}
-        onPrint={() => {
-          // Decrement the last segment of the quote ID
-          const idParts = currentQuote.id.split('-');
-          const lastSegment = parseInt(idParts[idParts.length - 1], 10);
-          if (!isNaN(lastSegment) && lastSegment > 1) {
-            idParts[idParts.length - 1] = (lastSegment - 1).toString();
-          }
-          const decrementedId = idParts.join('-');
-          onNavigate(`/quote-test?id=${decrementedId}`);
-        }}
+        onPrint={() => onNavigate(`/quote-test?id=${currentQuote.id}`)}
         onDownloadPDF={() => onNavigate(`/quote-test?id=${currentQuote.id}`)}
       />
     </Layout>
