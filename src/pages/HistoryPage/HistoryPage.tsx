@@ -56,6 +56,8 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
     client: '',
     site: '',
     period: 'all',
+    startDate: '',
+    endDate: '',
   });
 
   const { loadQuote } = useQuote();
@@ -109,12 +111,16 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
 
       console.log(`Found ${Object.keys(versionGroups).length} quote groups`);
 
-      // Sort each group by version
+      // Sort each group by creation date and assign version numbers
       Object.keys(versionGroups).forEach(baseId => {
+        // Sort by creation date, oldest first
         versionGroups[baseId].sort((a, b) => {
-          const versionA = extractVersion(a.id) ?? 0;
-          const versionB = extractVersion(b.id) ?? 0;
-          return versionB - versionA; // newest first
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        });
+
+        // Assign version numbers (0 for oldest, 1 for second oldest, etc.)
+        versionGroups[baseId].forEach((quote, index) => {
+          quote.version = index;
         });
       });
 
@@ -221,6 +227,19 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
             return quoteDate >= startOfYear && quoteDate <= today;
           });
           break;
+
+        case 'custom':
+          if (filters.startDate && filters.endDate) {
+            const startDate = new Date(filters.startDate);
+            const endDate = new Date(filters.endDate);
+            endDate.setHours(23, 59, 59, 999); // Set to end of day
+
+            result = result.filter(quote => {
+              const quoteDate = new Date(quote.date);
+              return quoteDate >= startDate && quoteDate <= endDate;
+            });
+          }
+          break;
       }
     }
 
@@ -294,6 +313,8 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
       client: '',
       site: '',
       period: 'all',
+      startDate: '',
+      endDate: '',
     });
     setShowAllVersions(false);
   };
@@ -590,8 +611,32 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                 <MenuItem value="week">Cette semaine</MenuItem>
                 <MenuItem value="month">Ce mois</MenuItem>
                 <MenuItem value="year">Cette année</MenuItem>
+                <MenuItem value="custom">Période personnalisée</MenuItem>
               </Select>
             </FormControl>
+
+            {filters.period === 'custom' && (
+              <Box sx={{ display: 'flex', gap: 2, gridColumn: 'span 2' }}>
+                <TextField
+                  fullWidth
+                  label="Date de début"
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                />
+                <TextField
+                  fullWidth
+                  label="Date de fin"
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Box>
+            )}
           </Box>
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
@@ -662,7 +707,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                             className={`version-badge ${quote.version === 0 ? 'original' : 'update'}`}
                             sx={{ ml: 1 }}
                           >
-                            Version {quote.version}
+                            {quote.version === 0 ? 'Version originale' : `Version ${quote.version}`}
                           </Typography>
                           <Box className="version-actions">
                             {/* We don't need any buttons here since this is the filtered view */}
