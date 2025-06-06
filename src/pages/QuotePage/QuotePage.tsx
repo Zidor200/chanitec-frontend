@@ -78,8 +78,10 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
 
   // Handle home button click
   const handleHomeClick = () => {
-    clearQuote();
-    createNewQuote();
+    if (currentPath === '/quote') {
+      clearQuote();
+      createNewQuote();
+    }
     onNavigate('/');
   };
 

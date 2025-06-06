@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Snackbar, Alert } from '@mui/material';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { QuoteProvider } from './contexts/QuoteContext';
 import QuotePage from './pages/QuotePage/QuotePage';
 import HistoryPage from './pages/HistoryPage/HistoryPage';
@@ -92,7 +92,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-function App() {
+// Create a wrapper component that uses useNavigate
+const AppContent = () => {
+  const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentPath, setCurrentPath] = useState('/');
   const [notification, setNotification] = useState({
@@ -104,20 +106,15 @@ function App() {
 
   // Initialize app data
   useEffect(() => {
-    // The initialization happens automatically in the StorageService constructor
-    // This just checks if we should show a notification about it
     const isInitialized = localStorage.getItem('app_initialized') === 'true';
     const justInitialized = localStorage.getItem('app_just_initialized') !== 'true';
 
     if (isInitialized && justInitialized) {
-      // Show a welcome notification
       setNotification({
         open: true,
         message: 'Données d\'exemple chargées avec succès',
         severity: 'success'
       });
-
-      // Mark as just initialized to prevent showing notification again
       localStorage.setItem('app_just_initialized', 'true');
     }
   }, []);
@@ -140,7 +137,7 @@ function App() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem('isAuthenticated');
-    window.location.href = '/login';
+    navigate('/login');
   };
 
   // Handle navigation
@@ -156,10 +153,10 @@ function App() {
 
       setPriceOfferQuoteId(quoteId);
       setCurrentPath(newPath);
-      window.location.href = newPath;
+      navigate(newPath);
     } else {
       setCurrentPath(path);
-      window.location.href = path;
+      navigate(path);
     }
   };
 
@@ -169,133 +166,135 @@ function App() {
   };
 
   return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <QuoteProvider>
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              isAuthenticated ?
+              <Navigate to="/home" replace /> :
+              <LoginPage onLogin={handleLogin} />
+            }
+          />
+
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/quote"
+            element={
+              <ProtectedRoute>
+                <QuotePage currentPath="/quote" onNavigate={handleNavigate} onLogout={handleLogout} />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/quote-test"
+            element={
+              <ProtectedRoute>
+                <QuoteTest currentPath="/quote-test" onNavigate={handleNavigate} />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/history"
+            element={
+              <ProtectedRoute>
+                <HistoryPage currentPath="/history" onNavigate={handleNavigate} />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/clients"
+            element={
+              <ProtectedRoute>
+                <ClientsPage currentPath="/clients" onNavigate={handleNavigate} />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/items"
+            element={
+              <ProtectedRoute>
+                <ItemsPage currentPath="/items" onNavigate={handleNavigate} />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/price-offer"
+            element={
+              <ProtectedRoute>
+                <PriceOfferPage
+                  currentPath="/price-offer"
+                  onNavigate={handleNavigate}
+                  quoteId={priceOfferQuoteId}
+                />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/intervention"
+            element={
+              <ProtectedRoute>
+                <InterventionPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/org-chart"
+            element={
+              <ProtectedRoute>
+                <OrgChartPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/employees"
+            element={
+              <ProtectedRoute>
+                <EmployeesPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="/" element={<Navigate to="/home" replace />} />
+        </Routes>
+      </QuoteProvider>
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseNotification} severity={notification.severity}>
+          {notification.message}
+        </Alert>
+      </Snackbar>
+    </ThemeProvider>
+  );
+};
+
+// Main App component
+function App() {
+  return (
     <BrowserRouter>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <QuoteProvider>
-          <Routes>
-            <Route
-              path="/login"
-              element={
-                isAuthenticated ?
-                <Navigate to="/home" replace /> :
-                <LoginPage onLogin={handleLogin} />
-              }
-            />
-
-            <Route
-              path="/home"
-              element={
-                <ProtectedRoute>
-                  <HomePage />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/quote"
-              element={
-                <ProtectedRoute>
-                  <QuotePage currentPath="/quote" onNavigate={handleNavigate} onLogout={handleLogout} />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/quote-test"
-              element={
-                <ProtectedRoute>
-                  <QuoteTest currentPath="/quote-test" onNavigate={handleNavigate} />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/history"
-              element={
-                <ProtectedRoute>
-                  <HistoryPage currentPath="/history" onNavigate={handleNavigate} />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/clients"
-              element={
-                <ProtectedRoute>
-                  <ClientsPage currentPath="/clients" onNavigate={handleNavigate} />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/items"
-              element={
-                <ProtectedRoute>
-                  <ItemsPage currentPath="/items" onNavigate={handleNavigate} />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/price-offer"
-              element={
-                <ProtectedRoute>
-                  <PriceOfferPage
-                    currentPath="/price-offer"
-                    onNavigate={handleNavigate}
-                    quoteId={priceOfferQuoteId}
-                  />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/intervention"
-              element={
-                <ProtectedRoute>
-                  <InterventionPage />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/org-chart"
-              element={
-                <ProtectedRoute>
-                  <OrgChartPage />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/employees"
-              element={
-                <ProtectedRoute>
-                  <EmployeesPage />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route path="/" element={<Navigate to="/quote" replace />} />
-          </Routes>
-
-          <Snackbar
-            open={notification.open}
-            autoHideDuration={6000}
-            onClose={handleCloseNotification}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-          >
-            <Alert
-              onClose={handleCloseNotification}
-              severity={notification.severity}
-              sx={{ width: '100%' }}
-            >
-              {notification.message}
-            </Alert>
-          </Snackbar>
-        </QuoteProvider>
-      </ThemeProvider>
+      <AppContent />
     </BrowserRouter>
   );
 }
