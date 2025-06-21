@@ -136,7 +136,7 @@ const QuoteActions: React.FC<QuoteActionsProps> = ({
         reminderDate: null
       };
 
-      const originalQuote = await apiService.getQuoteById(currentQuoteInfo.id);
+      const originalQuote = await apiService.getQuoteById(currentQuoteInfo.id, currentQuoteInfo.createdAt);
       const hasChanges = JSON.stringify(currentQuoteInfo) !== JSON.stringify(originalQuote);
 
       if (hasChanges) {

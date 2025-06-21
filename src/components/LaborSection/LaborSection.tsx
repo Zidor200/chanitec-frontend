@@ -103,6 +103,7 @@ const LaborSection: React.FC<LaborSectionProps> = ({
       </Typography>
 
       <TextField
+        select
         fullWidth
         label="Description de la main d'oeuvre"
         value={description}
@@ -110,9 +111,14 @@ const LaborSection: React.FC<LaborSectionProps> = ({
         variant="outlined"
         margin="normal"
         className="description-field"
-        multiline
-        rows={2}
-      />
+      >
+        <MenuItem value="Fixation, mise au point, raccordement, mise en vide et mise en service En weekend">
+          Fixation, mise au point, raccordement, mise en vide et mise en service En weekend
+        </MenuItem>
+        <MenuItem value="Fixation, mise au point, raccordement, mise en vide et mise en service ">
+          Fixation, mise au point, raccordement, mise en vide et mise en service
+        </MenuItem>
+      </TextField>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems:  'right' , gap: 5 }} className="rates-container">
         <Box className="rates-container-item" sx={{ flex: '1 1 50px', width: '50%'}}>

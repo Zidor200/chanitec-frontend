@@ -359,7 +359,7 @@ const quoteReducer = (state: QuoteState, action: QuoteAction): QuoteState => {
 interface QuoteContextProps {
   state: QuoteState;
   createNewQuote: () => void;
-  loadQuote: (id: string, fromHistory?: boolean) => void;
+  loadQuote: (id: string, createdAt: string, fromHistory?: boolean) => void;
   saveQuote: () => Promise<boolean>;
   updateQuote: () => Promise<boolean>;
   setQuoteField: <K extends keyof Quote>(field: K, value: Quote[K]) => void;
@@ -423,15 +423,13 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
   };
 
   // Load a quote by ID
-  const loadQuote = async (id: string, fromHistory: boolean = false) => {
+  const loadQuote = async (id: string, createdAt: string, fromHistory: boolean = false) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      const quote = await apiService.getQuoteById(id);
+      const quote = await apiService.getQuoteById(id, createdAt);
       if (!quote) {
         throw new Error('Quote not found');
       }
-
-      // Always use the original quote ID, regardless of where it's loaded from
       dispatch({ type: 'SET_ORIGINAL_QUOTE_ID', payload: id });
       dispatch({ type: 'SET_QUOTE', payload: quote });
       dispatch({ type: 'SET_EXISTING_QUOTE', payload: true });
@@ -452,36 +450,42 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
 
       let quoteToSave = { ...state.currentQuote };
       let newId = state.currentQuote.id;
+      let isUpdate = false;
+      let parentId: string | undefined = undefined;
 
       // If it's a new quote (no ID or version 0), create it
       if (!state.currentQuote.id || state.currentQuote.version === 0) {
         // Create new quote
+        quoteToSave = {
+          ...quoteToSave,
+          parentId: "",
+        };
         const savedQuote = await apiService.saveQuote(quoteToSave);
         dispatch({ type: 'SET_QUOTE', payload: savedQuote });
         dispatch({ type: 'SET_EXISTING_QUOTE', payload: true });
         dispatch({ type: 'SET_ORIGINAL_QUOTE_ID', payload: savedQuote.id });
         return true;
+      } else {
+        // For updating an existing quote: create a new quote with a new ID and parent reference
+        isUpdate = true;
+        parentId = state.currentQuote.id;
+        newId = generateQuoteId();
+        quoteToSave = {
+          ...state.currentQuote,
+          id: newId,
+          parentId: parentId,
+          version: 1,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          metadata: {
+            ...state.currentQuote.metadata,
+            version: 1,
+            updatedAt: new Date().toISOString(),
+          }
+        };
       }
 
-      // For existing quotes, create a new version
-      const baseId = extractBaseId(state.currentQuote.id);
-      if (!baseId) {
-        throw new Error('Invalid quote ID format');
-      }
-      const nextVersion = getNextVersion(state.currentQuote.version);
-      newId = generateQuoteId(baseId);
-
-      // Create the quote payload without items
-      quoteToSave = {
-        ...state.currentQuote,
-        id: newId,
-        version: nextVersion,
-        updatedAt: new Date().toISOString(),
-        supplyItems: [], // Empty array as we'll create new items
-        laborItems: []   // Empty array as we'll create new items
-      };
-
-      // Save the quote
+      // Save the new quote (as a new entry)
       const savedQuote = await apiService.saveQuote(quoteToSave);
 
       // Create new supply items
@@ -511,7 +515,7 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
       }
 
       // Fetch the complete updated quote with new items
-      const completeQuoteResponse = await apiService.getQuoteById(newId);
+      const completeQuoteResponse = await apiService.getQuoteById(newId, quoteToSave.createdAt);
       if (!completeQuoteResponse) {
         throw new Error('Failed to fetch updated quote');
       }

@@ -21,11 +21,9 @@ import './HistoryPage.scss';
 import { ReceiptLongOutlined } from '@mui/icons-material';
 import logo from '../../logo.png';
 import AddAlarmIcon from '@mui/icons-material/AddAlarm';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { Client, Site, Quote } from '../../models/Quote';
 import { apiService } from '../../services/api-service';
-import { extractBaseId, extractVersion } from '../../utils/id-generator';
+import { extractBaseId } from '../../utils/id-generator';
 
 interface HistoryPageProps {
   currentPath: string;
@@ -47,14 +45,16 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [filteredQuotes, setFilteredQuotes] = useState<Quote[]>([]);
 
-  // Group quotes by base ID
+  // Group quotes by parentId (originals by their own id, updates by parentId)
   const groupedQuotes = React.useMemo(() => {
-    const groups: { [baseId: string]: Quote[] } = {};
+    const groups: { [groupId: string]: Quote[] } = {};
     for (const quote of filteredQuotes) {
-      const baseId = extractBaseId(quote.id);
-      if (!baseId) continue;
-      if (!groups[baseId]) groups[baseId] = [];
-      groups[baseId].push(quote);
+      // Treat parentId of '', undefined, or '0' as no parent (original)
+      const hasValidParent = quote.parentId && quote.parentId !== '' && quote.parentId !== '0';
+      let groupId = hasValidParent ? quote.parentId : quote.id;
+      if (!groupId) groupId = quote.id; // Ensure groupId is always a string
+      if (!groups[groupId]) groups[groupId] = [];
+      groups[groupId].push(quote);
     }
     // Sort each group by createdAt (oldest first)
     Object.values(groups).forEach(group => {
@@ -102,6 +102,15 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
     // eslint-disable-next-line
   }, [filters.client, clients]);
 
+  // Helper to parse date safely
+  const parseQuoteDate = (dateStr: string | Date): Date => {
+    if (dateStr instanceof Date) return dateStr;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return new Date(dateStr + 'T00:00:00');
+    }
+    return new Date(dateStr);
+  };
+
   // Apply filters to quotes
   useEffect(() => {
     let result = [...quotes];
@@ -120,7 +129,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
       today.setHours(0, 0, 0, 0);
       if (filters.period === 'today') {
         result = result.filter(q => {
-          const quoteDate = new Date(q.date);
+          const quoteDate = parseQuoteDate(q.date);
           quoteDate.setHours(0, 0, 0, 0);
           return quoteDate.getTime() === today.getTime();
         });
@@ -128,27 +137,27 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
         const startOfWeek = new Date(today);
         startOfWeek.setDate(today.getDate() - today.getDay());
         result = result.filter(q => {
-          const quoteDate = new Date(q.date);
+          const quoteDate = parseQuoteDate(q.date);
           return quoteDate >= startOfWeek && quoteDate <= today;
         });
       } else if (filters.period === 'month') {
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         result = result.filter(q => {
-          const quoteDate = new Date(q.date);
+          const quoteDate = parseQuoteDate(q.date);
           return quoteDate >= startOfMonth && quoteDate <= today;
         });
       } else if (filters.period === 'year') {
         const startOfYear = new Date(today.getFullYear(), 0, 1);
         result = result.filter(q => {
-          const quoteDate = new Date(q.date);
+          const quoteDate = parseQuoteDate(q.date);
           return quoteDate >= startOfYear && quoteDate <= today;
         });
       } else if (filters.period === 'custom' && filters.startDate && filters.endDate) {
-        const startDate = new Date(filters.startDate);
-        const endDate = new Date(filters.endDate);
+        const startDate = parseQuoteDate(filters.startDate);
+        const endDate = parseQuoteDate(filters.endDate);
         endDate.setHours(23, 59, 59, 999);
         result = result.filter(q => {
-          const quoteDate = new Date(q.date);
+          const quoteDate = parseQuoteDate(q.date);
           return quoteDate >= startDate && quoteDate <= endDate;
         });
       }
@@ -169,11 +178,11 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
   const handleLoadQuote = (quoteId: string) => {
     onNavigate(`/quote?id=${quoteId}`);
   };
-  const handleDeleteQuote = async (quoteId: string, createdAt: string) => {
+  const handleDeleteQuote = async (quoteId: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce devis ?')) {
-      // Call backend to delete by id (API only supports id), but filter in UI by both id and createdAt
+      // Call backend to delete by id only
       await apiService.deleteQuote(quoteId);
-      setQuotes(prev => prev.filter(q => !(q.id === quoteId && q.createdAt === createdAt)));
+      setQuotes(prev => prev.filter(q => q.id !== quoteId));
     }
   };
   const handleViewPriceOffer = (quoteId: string) => {
@@ -272,6 +281,30 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                 <MenuItem value="custom">Période personnalisée</MenuItem>
               </Select>
             </FormControl>
+
+            {/* Show date pickers if custom period is selected */}
+            {filters.period === 'custom' && (
+              <>
+                <TextField
+                  label="Date de début"
+                  type="date"
+                  size="small"
+                  value={filters.startDate}
+                  onChange={e => handleFilterChange('startDate', e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ minWidth: 180, marginRight: 2, marginTop: 1 }}
+                />
+                <TextField
+                  label="Date de fin"
+                  type="date"
+                  size="small"
+                  value={filters.endDate}
+                  onChange={e => handleFilterChange('endDate', e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ minWidth: 180, marginTop: 1 }}
+                />
+              </>
+            )}
           </Box>
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
@@ -344,7 +377,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                       <Button className="action-button" size="small" color="primary" startIcon={<ReceiptLongOutlined />} onClick={() => handleViewPriceOffer(quote.id)}>
                         Voir l'offre de prix
                       </Button>
-                      <Button className="action-button delete" size="small" color="error" startIcon={<DeleteIcon />} onClick={() => handleDeleteQuote(quote.id, quote.createdAt)}>
+                      <Button className="action-button delete" size="small" color="error" startIcon={<DeleteIcon />} onClick={() => handleDeleteQuote(quote.id)}>
                         Supprimer
                       </Button>
                     </Box>
