@@ -53,9 +53,9 @@ class ApiService {
         return this.fetchApi<Quote[]>('/quotes');
     }
 
-    async getQuoteById(id: string): Promise<Quote | null> {
+    async getQuoteById(id: string, createdAt: string): Promise<Quote | null> {
         try {
-            return await this.fetchApi<Quote>(`/quotes/${id}`);
+            return await this.fetchApi<Quote>(`/quotes/${id}/${createdAt}`);
         } catch (error) {
             throw error;
         }
@@ -75,7 +75,7 @@ class ApiService {
     }
 
     async updateQuote(quote: Quote): Promise<Quote> {
-        const response = await fetch(`${API_BASE_URL}/quotes/${quote.id}`, {
+        const response = await fetch(`${API_BASE_URL}/quotes/${quote.id}/${quote.createdAt}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

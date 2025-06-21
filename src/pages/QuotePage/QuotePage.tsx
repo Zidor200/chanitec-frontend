@@ -49,7 +49,20 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
     if (quoteId && !currentQuote && !isLoading) {
       const queryParams = new URLSearchParams(window.location.search);
       const fromHistory = queryParams.get('fromHistory') === 'true';
-      loadQuote(quoteId, fromHistory);
+      // Fetch createdAt for the quoteId
+      const fetchAndLoad = async () => {
+        try {
+          const allQuotes = await fetch(`${process.env.REACT_APP_API_URL}/quotes`).then(res => res.json());
+          const found = allQuotes.find((q: any) => q.id === quoteId);
+          if (found) {
+            loadQuote(quoteId, found.createdAt, fromHistory);
+          }
+        } catch (e) {
+          // fallback: try to load with empty createdAt
+          loadQuote(quoteId, '', fromHistory);
+        }
+      };
+      fetchAndLoad();
     }
   }, [quoteId, isLoading, loadQuote]);
 
@@ -81,8 +94,10 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
     if (currentPath === '/quote') {
       clearQuote();
       createNewQuote();
+      onNavigate('/quote');
+    } else {
+      onNavigate('/');
     }
-    onNavigate('/');
   };
 
   const handleConfirmQuote = async () => {

@@ -95,6 +95,8 @@ export interface Quote {
     updatedAt: string;
     version: number;
   };
+
+  parentId?: string; // Reference to the parent quote if this is a revision
 }
 
 /**

@@ -41,8 +41,22 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
       }
 
       try {
-        // Directly fetch the quote data from the backend API
-        const quote = await apiService.getQuoteById(quoteIdFromUrl);
+        // Find the quote in the list to get createdAt
+        let createdAt = '';
+        try {
+          const allQuotes = await fetch(`${process.env.REACT_APP_API_URL}/quotes`).then(res => res.json());
+          const found = allQuotes.find((q: any) => q.id === quoteIdFromUrl);
+          if (found) {
+            createdAt = found.createdAt;
+          } else {
+            setError('Quote not found');
+            return;
+          }
+        } catch (e) {
+          setError('Failed to fetch quote list');
+          return;
+        }
+        const quote = await apiService.getQuoteById(quoteIdFromUrl, createdAt);
         console.log('Fetched quote data:', quote);
 
         if (!quote) {

@@ -54,7 +54,20 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
       if (!isLoading && quoteId && (!currentQuote || currentQuote.id !== quoteId)) {
         try {
           console.log('Attempting to load quote with ID:', quoteId);
-          await loadQuote(quoteId);
+          // Fetch createdAt for the quoteId
+          let createdAt = '';
+          if (currentQuote && currentQuote.id === quoteId) {
+            createdAt = currentQuote.createdAt;
+          } else {
+            try {
+              const allQuotes = await fetch(`${process.env.REACT_APP_API_URL}/quotes`).then(res => res.json());
+              const found = allQuotes.find((q: any) => q.id === quoteId);
+              if (found) {
+                createdAt = found.createdAt;
+              }
+            } catch (e) {}
+          }
+          await loadQuote(quoteId, createdAt);
           console.log('Quote loaded successfully');
           setIsReady(true);
         } catch (error) {

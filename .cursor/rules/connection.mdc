@@ -1,0 +1,84 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Chanitec Backend Connection Information for Frontend
+# Fill in the actual values as needed.
+
+API_BASE_URL = "https://your-backend-domain.com/api"  # The base URL for the backend API
+API_VERSION = "v1"  # API version if applicable
+
+# Authentication
+AUTH_METHOD = "Bearer Token"  # e.g., 'Bearer Token', 'API Key', 'OAuth2', etc.
+AUTH_TOKEN_PLACEHOLDER = "<YOUR_AUTH_TOKEN_HERE>"  # Replace with actual token or method to retrieve it
+
+# Example Endpoints (CRUD for each resource)
+ENDPOINTS = {
+    # Clients
+    "List Clients":        {"method": "GET",    "path": "/clients"},
+    "Get Client":          {"method": "GET",    "path": "/clients/{id}"},
+    "Create Client":       {"method": "POST",   "path": "/clients"},
+    "Update Client":       {"method": "PUT",    "path": "/clients/{id}"},
+    "Delete Client":       {"method": "DELETE", "path": "/clients/{id}"},
+
+    # Sites
+    "List Sites":          {"method": "GET",    "path": "/sites"},
+    "Get Site":            {"method": "GET",    "path": "/sites/{id}"},
+    "Create Site":         {"method": "POST",   "path": "/sites"},
+    "Update Site":         {"method": "PUT",    "path": "/sites/{id}"},
+    "Delete Site":         {"method": "DELETE", "path": "/sites/{id}"},
+
+    # Items
+    "List Items":          {"method": "GET",    "path": "/items"},
+    "Get Item":            {"method": "GET",    "path": "/items/{id}"},
+    "Create Item":         {"method": "POST",   "path": "/items"},
+    "Update Item":         {"method": "PUT",    "path": "/items/{id}"},
+    "Delete Item":         {"method": "DELETE", "path": "/items/{id}"},
+
+    # Quotes
+    "List Quotes":         {"method": "GET",    "path": "/quotes"},
+    "Get Quote":           {"method": "GET",    "path": "/quotes/{id}/{created_at}"},
+    "Create Quote":        {"method": "POST",   "path": "/quotes"},
+    "Update Quote":        {"method": "PUT",    "path": "/quotes/{id/{created_at}}"},
+    "Delete Quote":        {"method": "DELETE", "path": "/quotes/{id}/{created_at}"},
+
+    # Supply Items
+    "List Supply Items":   {"method": "GET",    "path": "/supply_items"},
+    "Get Supply Item":     {"method": "GET",    "path": "/supply_items/{id}"},
+    "Create Supply Item":  {"method": "POST",   "path": "/supply_items"},
+    "Update Supply Item":  {"method": "PUT",    "path": "/supply_items/{id}"},
+    "Delete Supply Item":  {"method": "DELETE", "path": "/supply_items/{id}"},
+
+    # Labor Items
+    "List Labor Items":    {"method": "GET",    "path": "/labor_items"},
+    "Get Labor Item":      {"method": "GET",    "path": "/labor_items/{id}"},
+    "Create Labor Item":   {"method": "POST",   "path": "/labor_items"},
+    "Update Labor Item":   {"method": "PUT",    "path": "/labor_items/{id}"},
+    "Delete Labor Item":   {"method": "DELETE", "path": "/labor_items/{id}"},
+
+    # Price Offers
+    "List Price Offers":   {"method": "GET",    "path": "/price_offers"},
+    "Get Price Offer":     {"method": "GET",    "path": "/price_offers/{id}"},
+    "Create Price Offer":  {"method": "POST",   "path": "/price_offers"},
+    "Update Price Offer":  {"method": "PUT",    "path": "/price_offers/{id}"},
+    "Delete Price Offer":  {"method": "DELETE", "path": "/price_offers/{id}"}
+}
+
+# CORS Settings (Cross-Origin Resource Sharing)
+CORS = {
+    "allowed_origins": ["http://localhost:3000", "https://your-frontend-domain.com"],  # List of allowed origins
+    "allowed_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # HTTP methods allowed
+    "allowed_headers": ["Content-Type", "Authorization"],  # Headers allowed in requests
+    "allow_credentials": true  # Whether to allow credentials (cookies, authorization headers, etc.)
+}
+
+# Additional Metadata (if needed)
+# DATABASE_TYPE = "MySQL"
+# DATABASE_HOST = "<DB_HOST>"
+# DATABASE_PORT = 3306
+# DATABASE_NAME = "Chanitec"
+# (Note: Frontend should NOT connect directly to the database for security reasons)
+
+# Add any other relevant connection or environment details below
+# ...

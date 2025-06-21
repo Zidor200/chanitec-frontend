@@ -15,7 +15,8 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Typography
+  Typography,
+  MenuItem
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -219,6 +220,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
       </Typography>
 
       <TextField
+        select
         fullWidth
         label="Description des fournitures"
         value={description}
@@ -226,9 +228,11 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
         variant="outlined"
         margin="none"
         className="description-field"
-        multiline
-        rows={2}
-      />
+      >
+        <MenuItem value="Extension des raccordements électriques, frigorifique et condensat">
+          Extension des raccordements électriques, frigorifique et condensat
+        </MenuItem>
+      </TextField>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }} className="rates-container">
         <Box className="rates-container-item" sx={{ flex: '1 1 50px' }}>
