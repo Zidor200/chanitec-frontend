@@ -11,46 +11,29 @@ import {
   Button,
   Paper,
   Card,
-  CardContent,
-  CardActions,
   IconButton,
   Divider
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import ClearIcon from '@mui/icons-material/Clear';
-import InfoIcon from '@mui/icons-material/Info';
 import Layout from '../../components/Layout/Layout';
-import { useQuote } from '../../contexts/QuoteContext';
-import { apiService } from '../../services/api-service';
-import { Quote, Client, Site } from '../../models/Quote';
-import { extractBaseId, extractVersion } from '../../utils/id-generator';
 import './HistoryPage.scss';
 import { ReceiptLongOutlined } from '@mui/icons-material';
-import { priceOfferService } from '../../services/price-offer-service';
-
 import logo from '../../logo.png';
 import AddAlarmIcon from '@mui/icons-material/AddAlarm';
-import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberInput';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import { Client, Site, Quote } from '../../models/Quote';
+import { apiService } from '../../services/api-service';
+import { extractBaseId, extractVersion } from '../../utils/id-generator';
 
 interface HistoryPageProps {
   currentPath: string;
-  onNavigate: (path: string, quoteId?: string) => void;
+  onNavigate: (path: string) => void;
 }
 
 const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) => {
-  // States for quotes and filters
-  const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [filteredQuotes, setFilteredQuotes] = useState<Quote[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [sites, setSites] = useState<Site[]>([]);
-  const [quoteVersions, setQuoteVersions] = useState<{ [baseId: string]: Quote[] }>({});
-  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
-  const [showAllVersions, setShowAllVersions] = useState<boolean>(false);
-
-  // Filter states
+  // Filter state
   const [filters, setFilters] = useState({
     id: '',
     client: '',
@@ -59,485 +42,167 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
     startDate: '',
     endDate: '',
   });
+  const [clients, setClients] = useState<Client[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [filteredQuotes, setFilteredQuotes] = useState<Quote[]>([]);
 
-  const { loadQuote } = useQuote();
+  // Group quotes by base ID
+  const groupedQuotes = React.useMemo(() => {
+    const groups: { [baseId: string]: Quote[] } = {};
+    for (const quote of filteredQuotes) {
+      const baseId = extractBaseId(quote.id);
+      if (!baseId) continue;
+      if (!groups[baseId]) groups[baseId] = [];
+      groups[baseId].push(quote);
+    }
+    // Sort each group by createdAt (oldest first)
+    Object.values(groups).forEach(group => {
+      group.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    });
+    return groups;
+  }, [filteredQuotes]);
 
-  // Load data on component mount
+  // Local state for reminder days per quote
+  const [reminderDays, setReminderDays] = useState<{ [quoteId: string]: number }>({});
+
+  // Fetch clients, sites, and quotes on mount
   useEffect(() => {
-    loadData();
+    const fetchData = async () => {
+      const [allClients, allQuotes] = await Promise.all([
+        apiService.getClients ? apiService.getClients() : [],
+        apiService.getQuotes(),
+      ]);
+      // Fetch sites for each client and attach
+      const clientsWithSites = await Promise.all(
+        (allClients || []).map(async (client) => {
+          const sites = await apiService.getSitesByClientId(client.id);
+          return { ...client, sites: sites || [] };
+        })
+      );
+      setClients(clientsWithSites);
+      setQuotes(allQuotes || []);
+    };
+    fetchData();
   }, []);
 
-  // Update filtered quotes when filters or quotes change
+  // Update sites when client changes
   useEffect(() => {
-    applyFilters();
-  }, [filters, quotes, showAllVersions]);
-
-  // Load all necessary data from API
-  const loadData = async () => {
-    try {
-      console.log('Loading quotes and clients...');
-      const [allQuotes, allClients] = await Promise.all([
-        fetch(`${process.env.REACT_APP_API_URL}/quotes`).then(res => res.json()),
-        fetch(`${process.env.REACT_APP_API_URL}/clients`).then(res => res.json())
-      ]);
-
-      console.log(`Loaded ${allQuotes.length} quotes and ${allClients.length} clients`);
-
-      // Check for quotes with reminder dates
-      allQuotes.forEach((quote: Quote) => {
-        if (quote.reminderDate) {
-          const reminderDate = new Date(quote.reminderDate);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-
-          if (reminderDate >= today) {
-            alert(`Rappel pour le devis ${quote.id}: ${reminderDate.toLocaleDateString('fr-FR')}`);
-          }
-        }
-      });
-
-      // Group quotes by base ID to identify versions
-      const versionGroups: { [baseId: string]: Quote[] } = {};
-
-      allQuotes.forEach((quote: Quote) => {
-        const baseId = extractBaseId(quote.id);
-        if (baseId) {
-          if (!versionGroups[baseId]) {
-            versionGroups[baseId] = [];
-          }
-          versionGroups[baseId].push(quote);
-        }
-      });
-
-      console.log(`Found ${Object.keys(versionGroups).length} quote groups`);
-
-      // Sort each group by creation date and assign version numbers
-      Object.keys(versionGroups).forEach(baseId => {
-        // Sort by creation date, oldest first
-        versionGroups[baseId].sort((a, b) => {
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        });
-
-        // Assign version numbers (0 for oldest, 1 for second oldest, etc.)
-        versionGroups[baseId].forEach((quote, index) => {
-          quote.version = index;
-        });
-      });
-
-      setQuoteVersions(versionGroups);
-      setQuotes(allQuotes);
-      setClients(allClients);
-      setFilteredQuotes(allQuotes);
-    } catch (error) {
-      console.error('Error loading data:', error);
-      // You might want to show an error message to the user here
-    }
-  };
-
-  // Update site options when client changes
-  const updateSiteOptions = async () => {
     if (filters.client) {
-      try {
-        const sitesForClient = await fetch(`${process.env.REACT_APP_API_URL}/sites/by-client?clientId=${filters.client}`).then(res => res.json());
-        setSites(sitesForClient);
-      } catch (error) {
-        console.error('Error loading sites:', error);
-        alert('Erreur lors du chargement des sites');
+      const client = clients.find(c => c.id === filters.client);
+      setSites(client ? client.sites : []);
+      // If the selected site does not belong to the new client, reset it
+      if (filters.site && !(client && client.sites.some(s => s.id === filters.site))) {
+        setFilters(prev => ({ ...prev, site: '' }));
       }
     } else {
       setSites([]);
+      setFilters(prev => ({ ...prev, site: '' }));
     }
+    // eslint-disable-next-line
+  }, [filters.client, clients]);
 
-    // Reset site filter when client changes
-    setFilters(prev => ({ ...prev, site: '' }));
-  };
-
-  // Apply all filters to the quotes
-  const applyFilters = () => {
+  // Apply filters to quotes
+  useEffect(() => {
     let result = [...quotes];
-
-    // Filter by ID - either exact ID match or baseId match
     if (filters.id) {
-      // Check if the filter is a base ID (8 digits) or a full quote ID
-      const isBaseIdFilter = /^\d{8}$/.test(filters.id);
-
-      if (isBaseIdFilter) {
-        // Filter by base ID - show all quotes with this base ID
-        result = result.filter(quote => {
-          const baseId = extractBaseId(quote.id);
-          return baseId === filters.id;
-        });
-      } else {
-        // Regular ID filter - use contains for flexibility
-        result = result.filter(quote =>
-          quote.id.toLowerCase().includes(filters.id.toLowerCase())
-        );
-      }
+      result = result.filter(q => q.id.includes(filters.id));
     }
-
-    // Filter by client
     if (filters.client) {
-      result = result.filter(quote =>
-        quote.clientName === clients.find(c => c.id === filters.client)?.name
-      );
+      result = result.filter(q => q.clientName === (clients.find(c => c.id === filters.client)?.name));
     }
-
-    // Filter by site
     if (filters.site) {
-      result = result.filter(quote =>
-        quote.siteName === sites.find(s => s.id === filters.site)?.name
-      );
+      result = result.filter(q => q.siteName === (sites.find(s => s.id === filters.site)?.name));
     }
-
-    // Filter by date
+    // Date filtering logic for period
     if (filters.period !== 'all') {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-
-      switch (filters.period) {
-        case 'today':
-          result = result.filter(quote => {
-            const quoteDate = new Date(quote.date);
-            quoteDate.setHours(0, 0, 0, 0);
-            return quoteDate.getTime() === today.getTime();
-          });
-          break;
-
-        case 'week':
-          const startOfWeek = new Date(today);
-          startOfWeek.setDate(today.getDate() - today.getDay());
-          result = result.filter(quote => {
-            const quoteDate = new Date(quote.date);
-            return quoteDate >= startOfWeek && quoteDate <= today;
-          });
-          break;
-
-        case 'month':
-          const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-          result = result.filter(quote => {
-            const quoteDate = new Date(quote.date);
-            return quoteDate >= startOfMonth && quoteDate <= today;
-          });
-          break;
-
-        case 'year':
-          const startOfYear = new Date(today.getFullYear(), 0, 1);
-          result = result.filter(quote => {
-            const quoteDate = new Date(quote.date);
-            return quoteDate >= startOfYear && quoteDate <= today;
-          });
-          break;
-
-        case 'custom':
-          if (filters.startDate && filters.endDate) {
-            const startDate = new Date(filters.startDate);
-            const endDate = new Date(filters.endDate);
-            endDate.setHours(23, 59, 59, 999); // Set to end of day
-
-            result = result.filter(quote => {
-              const quoteDate = new Date(quote.date);
-              return quoteDate >= startDate && quoteDate <= endDate;
-            });
-          }
-          break;
-      }
-    }
-
-    // Sort by date (newest first)
-    result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    // If not showing all versions and not filtering by base ID, filter to show only the latest version of each quote
-    if (!showAllVersions && !(/^\d{8}$/.test(filters.id))) {
-      // Group by base ID
-      const groupedByBaseId: { [baseId: string]: Quote[] } = {};
-      result.forEach(quote => {
-        const baseId = extractBaseId(quote.id);
-        if (baseId) {
-          if (!groupedByBaseId[baseId]) {
-            groupedByBaseId[baseId] = [];
-          }
-          groupedByBaseId[baseId].push(quote);
-        } else {
-          // For quotes that don't match the new format, treat them as individual quotes
-          groupedByBaseId[quote.id] = [quote];
-        }
-      });
-
-      // For each group, only include the latest version and any versions that are explicitly expanded
-      const filteredResult: Quote[] = [];
-      Object.entries(groupedByBaseId).forEach(([baseId, quotes]) => {
-        // Sort by version, newest first
-        quotes.sort((a, b) => {
-          const versionA = extractVersion(a.id) ?? 0;
-          const versionB = extractVersion(b.id) ?? 0;
-          return versionB - versionA;
+      if (filters.period === 'today') {
+        result = result.filter(q => {
+          const quoteDate = new Date(q.date);
+          quoteDate.setHours(0, 0, 0, 0);
+          return quoteDate.getTime() === today.getTime();
         });
-
-        if (expandedGroups.includes(baseId)) {
-          // If this group is expanded, add all versions
-          filteredResult.push(...quotes);
-        } else {
-          // Otherwise, only add the latest version
-          if (quotes.length > 0) {
-            filteredResult.push(quotes[0]);
-          }
-        }
-      });
-
-      // Re-sort the filtered results
-      filteredResult.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      result = filteredResult;
+      } else if (filters.period === 'week') {
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        result = result.filter(q => {
+          const quoteDate = new Date(q.date);
+          return quoteDate >= startOfWeek && quoteDate <= today;
+        });
+      } else if (filters.period === 'month') {
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        result = result.filter(q => {
+          const quoteDate = new Date(q.date);
+          return quoteDate >= startOfMonth && quoteDate <= today;
+        });
+      } else if (filters.period === 'year') {
+        const startOfYear = new Date(today.getFullYear(), 0, 1);
+        result = result.filter(q => {
+          const quoteDate = new Date(q.date);
+          return quoteDate >= startOfYear && quoteDate <= today;
+        });
+      } else if (filters.period === 'custom' && filters.startDate && filters.endDate) {
+        const startDate = new Date(filters.startDate);
+        const endDate = new Date(filters.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        result = result.filter(q => {
+          const quoteDate = new Date(q.date);
+          return quoteDate >= startDate && quoteDate <= endDate;
+        });
+      }
     }
-
     setFilteredQuotes(result);
+    // eslint-disable-next-line
+  }, [filters, quotes, clients, sites]);
+
+  // Handlers
+  const handleFilterChange = (field: string, value: string) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
+  };
+  const handleClearFilters = () => {
+    setFilters({ id: '', client: '', site: '', period: 'all', startDate: '', endDate: '' });
   };
 
-  // Toggle the expanded state of a quote group
-  const toggleGroupExpand = (baseId: string) => {
-    if (expandedGroups.includes(baseId)) {
-      setExpandedGroups(expandedGroups.filter(id => id !== baseId));
-    } else {
-      setExpandedGroups([...expandedGroups, baseId]);
+  // Handlers for quote card actions
+  const handleLoadQuote = (quoteId: string) => {
+    onNavigate(`/quote?id=${quoteId}`);
+  };
+  const handleDeleteQuote = async (quoteId: string, createdAt: string) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce devis ?')) {
+      // Call backend to delete by id (API only supports id), but filter in UI by both id and createdAt
+      await apiService.deleteQuote(quoteId);
+      setQuotes(prev => prev.filter(q => !(q.id === quoteId && q.createdAt === createdAt)));
     }
   };
-
-  // Toggle showing all versions
-  const toggleShowAllVersions = () => {
-    setShowAllVersions(!showAllVersions);
+  const handleViewPriceOffer = (quoteId: string) => {
+    onNavigate(`/price-offer?id=${quoteId}`);
   };
-
-  // Clear all filters
-  const clearFilters = () => {
-    setFilters({
-      id: '',
-      client: '',
-      site: '',
-      period: 'all',
-      startDate: '',
-      endDate: '',
+  const handleReminderChange = (quoteId: string, value: number) => {
+    setReminderDays(prev => ({ ...prev, [quoteId]: value }));
+  };
+  const handleSetReminder = async (quoteId: string) => {
+    const days = reminderDays[quoteId] || 0;
+    if (days < 1) return;
+    const currentDate = new Date();
+    const reminderDate = new Date(currentDate.setDate(currentDate.getDate() + days));
+    const formattedDate = reminderDate.toISOString().split('T')[0];
+    // Use fetch directly since fetchApi is private
+    await fetch(`${process.env.REACT_APP_API_URL}/quotes/${quoteId}/reminder`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reminderDate: formattedDate }),
     });
-    setShowAllVersions(false);
-  };
-
-  // Load a quote
-  const handleLoadQuote = async (quoteId: string) => {
-    try {
-      const quote = quotes.find(q => q.id === quoteId);
-      if (!quote) {
-        throw new Error('Quote not found');
-      }
-      await loadQuote(quoteId);
-      onNavigate(`/quote?id=${quoteId}&fromHistory=true&confirmed=${quote.confirmed || false}`);
-    } catch (error) {
-      console.error('Failed to load quote:', error);
-      alert('Erreur lors du chargement du devis');
-    }
-  };
-
-  // Delete a quote
-  const handleDeleteQuote = async (quoteId: string) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce devis?')) {
-      try {
-        await fetch(`${process.env.REACT_APP_API_URL}/quotes/${quoteId}`, { method: 'DELETE' });
-        const updatedQuotes = quotes.filter(quote => quote.id !== quoteId);
-        setQuotes(updatedQuotes);
-
-        // Also remove from version groups if needed
-        const baseId = extractBaseId(quoteId);
-        if (baseId && quoteVersions[baseId]) {
-          const updatedVersions = quoteVersions[baseId].filter(q => q.id !== quoteId);
-          if (updatedVersions.length === 0) {
-            const { [baseId]: _, ...remainingGroups } = quoteVersions;
-            setQuoteVersions(remainingGroups);
-          } else {
-            setQuoteVersions({
-              ...quoteVersions,
-              [baseId]: updatedVersions
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error deleting quote:', error);
-        alert('Erreur lors de la suppression du devis');
-      }
-    }
-  };
-
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  // Format quote ID for display, highlighting the version
-  const formatQuoteId = (id: string) => {
-    const version = extractVersion(id);
-    if (version !== null) {
-      return (
-        <span>
-          {id.substring(0, id.length - 3)}
-          <span className={`version-highlight ${version === 0 ? 'original' : 'update'}`}>
-            {id.substring(id.length - 3)}
-          </span>
-        </span>
-      );
-    }
-    return id;
-  };
-
-  // Get version label
-  const getVersionLabel = (quoteId: string) => {
-    const version = extractVersion(quoteId);
-    if (version === null) return null;
-
-    if (version === 0) {
-      return (
-        <Typography
-          variant="caption"
-          className="version-badge original"
-        >
-          Version originale
-        </Typography>
-      );
-    } else {
-      return (
-        <Typography
-          variant="caption"
-          className="version-badge update"
-        >
-          Version {version}
-        </Typography>
-      );
-    }
-  };
-
-  // Check if a quote has other versions
-  const hasOtherVersions = (quoteId: string) => {
-    const baseId = extractBaseId(quoteId);
-    return baseId && quoteVersions[baseId] && quoteVersions[baseId].length > 1;
-  };
-
-  // Get the total number of versions for a quote
-  const getVersionCount = (quoteId: string) => {
-    const baseId = extractBaseId(quoteId);
-    return baseId && quoteVersions[baseId] ? quoteVersions[baseId].length : 1;
-  };
-
-  // Show all versions of a specific quote
-  const showRelatedVersions = (quoteId: string) => {
-    const baseId = extractBaseId(quoteId);
-    if (!baseId) return;
-
-    // Clear other filters
-    setFilters(prev => ({
-      ...prev,
-      id: '',
-      client: '',
-      site: '',
-      period: 'all',
-    }));
-
-    // Show all versions
-    setShowAllVersions(true);
-
-    // Set the filter to only show quotes with this base ID
-    setFilters(prev => ({ ...prev, id: baseId }));
-  };
-
-  const handleViewPriceOffer = (quote: Quote) => {
-    // Create price offer if it doesn't exist
-    if (!priceOfferService.getByQuoteId(quote.id)) {
-      priceOfferService.createFromQuote(quote);
-    }
-    onNavigate('/price-offer', quote.id);
-  };
-
-  const handleSetReminder = async (quoteId: string, durationDays: number) => {
-    try {
-      // Calculate the reminder date by adding duration to current date
-      const currentDate = new Date();
-      const reminderDate = new Date(currentDate.setDate(currentDate.getDate() + durationDays));
-
-      // Format the date to YYYY-MM-DD for the database
-      const formattedDate = reminderDate.toISOString().split('T')[0];
-
-      // Make API call to update reminder date
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/quotes/${quoteId}/reminder`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ reminderDate: formattedDate }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to set reminder date');
-      }
-
-      // Update local state if needed
-      // You might want to refresh the quotes list or update the specific quote
-      const updatedQuotes = quotes.map(q => {
-        if (q.id === quoteId) {
-          return { ...q, reminderDate: formattedDate };
-        }
-        return q;
-      });
-      setQuotes(updatedQuotes);
-
-      // Show success message
-      alert('Rappel configuré avec succès');
-    } catch (error) {
-      console.error('Error setting reminder:', error);
-      alert('Erreur lors de la configuration du rappel');
-    }
-  };
-
-  // Helper function to get version from ID
-  const getVersionFromId = (id: string): string => {
-    const parts = id.split('-');
-    return parts[parts.length - 1];
-  };
-
-  const handleConfirmQuote = async (quoteId: string) => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/quotes/${quoteId}/confirm`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ confirmed: true }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to confirm quote');
-      }
-
-      // Update local state to reflect the change
-      const updatedQuotes = quotes.map(q => {
-        if (q.id === quoteId) {
-          return { ...q, confirmed: true };
-        }
-        return q;
-      });
-      setQuotes(updatedQuotes);
-
-      // Show success message
-      alert('Devis confirmé avec succès');
-    } catch (error) {
-      console.error('Error confirming quote:', error);
-      alert('Erreur lors de la confirmation du devis');
-    }
+    setQuotes(prev => prev.map(q => q.id === quoteId ? { ...q, reminderDate: formattedDate } : q));
+    alert('Rappel configuré avec succès');
   };
 
   return (
     <Layout currentPath={currentPath} onNavigate={onNavigate}>
       <Container maxWidth="lg" className="history-page">
-      <Box sx={{ display: 'flex', position: 'relative', width: '100%',height: '80px', backgroundColor: 'white' , color: 'black'}} className="page-header">
-        <Box sx={{ position: 'absolute', left: 0 , display: 'flex', alignItems: 'center',gap: 40 }}>
+        <Box sx={{ display: 'flex', position: 'relative', width: '100%', height: '80px', backgroundColor: 'white', color: 'black' }} className="page-header">
+          <Box sx={{ position: 'absolute', left: 0, display: 'flex', alignItems: 'center', gap: 40 }}>
           <img
             src={logo}
             alt="Logo"
@@ -558,26 +223,21 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
               fullWidth
               label="ID"
               variant="outlined"
-              value={filters.id}
-              onChange={(e) => setFilters(prev => ({ ...prev, id: e.target.value }))}
               size="small"
+              value={filters.id}
+              onChange={e => handleFilterChange('id', e.target.value)}
             />
 
             <FormControl fullWidth size="small">
               <InputLabel>Client</InputLabel>
               <Select
-                value={filters.client}
                 label="Client"
-                onChange={(e) => {
-                  setFilters(prev => ({ ...prev, client: e.target.value as string }));
-                  updateSiteOptions();
-                }}
+                value={filters.client}
+                onChange={e => handleFilterChange('client', e.target.value as string)}
               >
                 <MenuItem value="">Tous les clients</MenuItem>
-                {clients.map(client => (
-                  <MenuItem key={client.id} value={client.id}>
-                    {client.name}
-                  </MenuItem>
+                {(clients || []).map(client => (
+                  <MenuItem key={client.id} value={client.id}>{client.name}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -585,16 +245,14 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
             <FormControl fullWidth size="small">
               <InputLabel>Site</InputLabel>
               <Select
-                value={filters.site}
                 label="Site"
-                onChange={(e) => setFilters(prev => ({ ...prev, site: e.target.value as string }))}
+                value={filters.site}
+                onChange={e => handleFilterChange('site', e.target.value as string)}
                 disabled={!filters.client}
               >
                 <MenuItem value="">Tous les sites</MenuItem>
-                {sites.map(site => (
-                  <MenuItem key={site.id} value={site.id}>
-                    {site.name}
-                  </MenuItem>
+                {(sites || []).map(site => (
+                  <MenuItem key={site.id} value={site.id}>{site.name}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -602,9 +260,9 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
             <FormControl fullWidth size="small">
               <InputLabel>Période</InputLabel>
               <Select
-                value={filters.period}
                 label="Période"
-                onChange={(e) => setFilters(prev => ({ ...prev, period: e.target.value as string }))}
+                value={filters.period}
+                onChange={e => handleFilterChange('period', e.target.value as string)}
               >
                 <MenuItem value="all">Toutes les dates</MenuItem>
                 <MenuItem value="today">Aujourd'hui</MenuItem>
@@ -614,367 +272,87 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                 <MenuItem value="custom">Période personnalisée</MenuItem>
               </Select>
             </FormControl>
-
-            {filters.period === 'custom' && (
-              <Box sx={{ display: 'flex', gap: 2, gridColumn: 'span 2' }}>
-                <TextField
-                  fullWidth
-                  label="Date de début"
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                  size="small"
-                  InputLabelProps={{ shrink: true }}
-                />
-                <TextField
-                  fullWidth
-                  label="Date de fin"
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                  size="small"
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Box>
-            )}
           </Box>
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={toggleShowAllVersions}
-            >
-              {showAllVersions ? 'Masquer les versions' : 'Afficher toutes les versions'}
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={clearFilters}
-            >
+            <Button variant="outlined" size="small" onClick={handleClearFilters}>
               Effacer les filtres
             </Button>
           </Box>
         </Paper>
 
         <Box sx={{ mt: 3 }}>
-          {filteredQuotes.length === 0 ? (
-            <Typography variant="body1">Aucun devis trouvé</Typography>
-          ) : /^\d{8}$/.test(filters.id) ? (
-            // When filtering by base ID, display quotes grouped by that base ID
-            <>
-              <Box className="versions-group-header">
-                <InfoIcon sx={{ mr: 1, color: '#1976d2' }} />
-                <Typography variant="subtitle1">
-                  Versions du devis avec base ID: <span className="group-id">{filters.id}</span>
-                </Typography>
-                <Box className="group-actions">
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => setFilters(prev => ({ ...prev, id: '' }))}
-                  >
-                    Retour à tous les devis
-                  </Button>
-                </Box>
-              </Box>
-
-              {filteredQuotes.map((quote, index, array) => {
-                const version = extractVersion(quote.id) ?? 0;
-                const baseId = extractBaseId(quote.id);
-                const isLatestVersion = baseId && quoteVersions[baseId] &&
-                  quoteVersions[baseId][0].id === quote.id;
-                const versionCount = baseId ? getVersionCount(quote.id) : 1;
-                const isExpanded = baseId ? expandedGroups.includes(baseId) : false;
-                const isHighlighted = /^\d{8}$/.test(filters.id) && baseId === filters.id;
-
+          {/* Render grouped quotes by base ID */}
+          {Object.entries(groupedQuotes).map(([baseId, versions]) => (
+            <Box key={baseId} sx={{ mb: 4, border: '2px solid #1976d2', borderRadius: 2, p: 2 }}>
+              <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
+                Groupe de devis: {baseId}
+              </Typography>
+              {versions.map((quote, idx) => {
+                const isOriginal = idx === 0;
+                const isLatest = idx === versions.length - 1;
                 return (
-                  <Card
-                    key={quote.id}
-                    className={`quote-card highlighted-group ${version === 0 ? 'version-original' : 'version-update'}`}
-                    sx={{
-                      mb: index === array.length - 1 ? 2 : 0
-                    }}
-                  >
-                    <CardContent>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="h6" component="div">
-                            {`${quote.id}`}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            className={`version-badge ${quote.version === 0 ? 'original' : 'update'}`}
-                            sx={{ ml: 1 }}
-                          >
-                            {quote.version === 0 ? 'Version originale' : `Version ${quote.version}`}
-                          </Typography>
-                          <Box className="version-actions">
-                            {/* We don't need any buttons here since this is the filtered view */}
-                          </Box>
-                        </Box>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatDate(quote.createdAt)}
+                  <Card className="quote-card" key={quote.id} sx={{ mb: 2, background: isLatest ? '#e3f2fd' : undefined }}>
+                    <Box className="card-header">
+                      <Box className="quote-id">
+                        <Typography component="span" className="id-number">
+                          {quote.id}
+                        </Typography>
+                        <Typography component="span" className={`version-label ${isOriginal ? 'original' : 'update'}`}
+                          sx={{ ml: 1 }}>
+                          {isOriginal ? 'Version originale' : `Version ${idx}`}
                         </Typography>
                       </Box>
-
-                      <Divider sx={{ mb: 2 }} />
-
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 1 }}>
-                        <Box sx={{ flex: '1 1 200px' }}>
-                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                            Client
-                          </Typography>
-                          <Typography variant="body1">
-                            {quote.clientName || "Non spécifié"}
-                          </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(quote.createdAt).toLocaleDateString('fr-FR')}
+                      </Typography>
+                    </Box>
+                    <Divider />
+                    <Box className="card-content">
+                      <Box className="info-grid">
+                        <Box className="info-item">
+                          <Typography className="label">Client</Typography>
+                          <Typography className="value">{quote.clientName || 'Non spécifié'}</Typography>
                         </Box>
-
-                        <Box sx={{ flex: '1 1 200px' }}>
-                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                            Site
-                          </Typography>
-                          <Typography variant="body1">
-                            {quote.siteName || "Non spécifié"}
-                          </Typography>
+                        <Box className="info-item">
+                          <Typography className="label">Site</Typography>
+                          <Typography className="value">{quote.siteName || 'Non spécifié'}</Typography>
                         </Box>
-
-                        <Box sx={{ flex: '1 1 200px' }}>
-                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                            Date
-                          </Typography>
-                          <Typography variant="body1">
-                            {formatDate(quote.date)}
-                          </Typography>
+                        <Box className="info-item">
+                          <Typography className="label">Date</Typography>
+                          <Typography className="value">{new Date(quote.date).toLocaleDateString('fr-FR')}</Typography>
                         </Box>
-
-                        <Box sx={{ flex: '1 1 200px' }}>
-                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                            Total TTC
-                          </Typography>
-                          <Typography variant="body1" fontWeight="bold">
+                        <Box className="info-item">
+                          <Typography className="label">Total TTC</Typography>
+                          <Typography className="value total">
                             {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(quote.totalTTC)}
                           </Typography>
                         </Box>
                       </Box>
-
-                      <Box sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                        mt: 2,
-                        borderTop: '1px solid rgba(0, 0, 0, 0.12)',
-                        paddingTop: 2
-                      }}>
-                        <CustomNumberInput
-                          label="Jours de rappel"
-                          value={quote.tempReminderDays || 0}
-                          onChange={(value) => {
-                            quote.tempReminderDays = value;
-                            // Force re-render
-                            setQuotes([...quotes]);
-                          }}
-                          min={1}
-                          step={1}
-                          margin="dense"
-                          variant="outlined"
-                        />
-                        <IconButton
-                          color="primary"
-                          onClick={() => handleSetReminder(quote.id, quote.tempReminderDays || 0)}
-                          disabled={!quote.tempReminderDays || quote.tempReminderDays < 1}
-                          sx={{ ml: 1 }}
-                        >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2, borderTop: '1px solid rgba(0, 0, 0, 0.12)', paddingTop: 2 }}>
+                        <TextField label="Jours de rappel" value={reminderDays[quote.id] || 0} size="small" variant="outlined" type="number"
+                          onChange={e => handleReminderChange(quote.id, Number(e.target.value))} />
+                        <IconButton color="primary" sx={{ ml: 1 }} onClick={() => handleSetReminder(quote.id)}>
                           <AddAlarmIcon />
                         </IconButton>
                       </Box>
-                    </CardContent>
-
-                    <CardActions disableSpacing>
-                      <Button
-                        size="small"
-                        startIcon={<VisibilityIcon />}
-                        onClick={() => handleLoadQuote(quote.id)}
-                      >
-                        Consulter
+                    </Box>
+                    <Box className="card-actions">
+                      <Button className="action-button view" size="small" startIcon={<VisibilityIcon />} onClick={() => handleLoadQuote(quote.id)}>
+                        Voir
                       </Button>
-
-                      <Button
-                        size="small"
-                        startIcon={<ReceiptLongOutlined />}
-                        onClick={() => handleViewPriceOffer(quote)}
-                        color="primary"
-                        sx={{ ml: 1 }}
-                      >
+                      <Button className="action-button" size="small" color="primary" startIcon={<ReceiptLongOutlined />} onClick={() => handleViewPriceOffer(quote.id)}>
                         Voir l'offre de prix
                       </Button>
-
-                      <Box sx={{ flexGrow: 1 }} />
-
-                      <IconButton
-                        aria-label="supprimer"
-                        onClick={() => handleDeleteQuote(quote.id)}
-                        size="small"
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </CardActions>
+                      <Button className="action-button delete" size="small" color="error" startIcon={<DeleteIcon />} onClick={() => handleDeleteQuote(quote.id, quote.createdAt)}>
+                        Supprimer
+                      </Button>
+                    </Box>
                   </Card>
                 );
               })}
-            </>
-          ) : (
-            // Regular rendering of quotes when not filtering by base ID
-            filteredQuotes.map((quote) => {
-              const baseId = extractBaseId(quote.id);
-              const version = extractVersion(quote.id) ?? 0;
-              const isLatestVersion = baseId && quoteVersions[baseId] &&
-                quoteVersions[baseId][0].id === quote.id;
-              const isExpanded = baseId ? expandedGroups.includes(baseId) : false;
-
-              return (
-                <Card key={quote.id} className="quote-card">
-                  <Box className="card-header">
-                    <Box className="quote-id">
-                      <Typography component="span" className="id-number">
-                        {`${quote.id}`}
-                      </Typography>
-                      <Typography
-                        component="span"
-                        className={`version-label ${quote.version === 0 ? 'original' : 'update'}`}
-                      >
-                        Version {quote.version}
-                      </Typography>
-                      {hasOtherVersions(quote.id) && (
-                        <Button
-                          size="small"
-                          color="primary"
-                          onClick={() => baseId && showRelatedVersions(quote.id)}
-                        >
-                          Voir toutes les versions ({getVersionCount(quote.id)})
-                        </Button>
-                      )}
-                      {hasOtherVersions(quote.id) && isLatestVersion && (
-                        <Button
-                          size="small"
-                          color="secondary"
-                          onClick={() => baseId && toggleGroupExpand(baseId)}
-                        >
-                          {isExpanded ? 'Replier' : 'Déplier'}
-                        </Button>
-                      )}
-                      {quote.confirmed ? (
-                        <CheckCircleIcon
-                          color="success"
-                          sx={{ ml: 1, fontSize: '1.2rem' }}
-                          titleAccess="Devis confirmé"
-                        />
-                      ) : (
-                        <CheckCircleOutlineIcon
-                          sx={{ ml: 1, fontSize: '1.2rem', color: 'rgba(0, 0, 0, 0.26)' }}
-                          titleAccess="Devis non confirmé"
-                        />
-                      )}
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {formatDate(quote.createdAt)}
-                    </Typography>
-                  </Box>
-
-                  <Divider />
-
-                  <Box className="card-content">
-                    <Box className="info-grid">
-                      <Box className="info-item">
-                        <Typography className="label">Client</Typography>
-                        <Typography className="value">{quote.clientName || "Non spécifié"}</Typography>
-                      </Box>
-
-                      <Box className="info-item">
-                        <Typography className="label">Site</Typography>
-                        <Typography className="value">{quote.siteName || "Non spécifié"}</Typography>
-                      </Box>
-
-                      <Box className="info-item">
-                        <Typography className="label">Date</Typography>
-                        <Typography className="value">{formatDate(quote.date)}</Typography>
-                      </Box>
-
-                      <Box className="info-item">
-                        <Typography className="label">Total TTC</Typography>
-                        <Typography className="value total">
-                          {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(quote.totalTTC)}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    <Box sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 2,
-                      mt: 2,
-                      borderTop: '1px solid rgba(0, 0, 0, 0.12)',
-                      paddingTop: 2
-                    }}>
-                      <CustomNumberInput
-                        label="Jours de rappel"
-                        value={quote.tempReminderDays || 0}
-                        onChange={(value) => {
-                          quote.tempReminderDays = value;
-                          // Force re-render
-                          setQuotes([...quotes]);
-                        }}
-                        min={1}
-                        step={1}
-                        margin="dense"
-                        variant="outlined"
-                      />
-                      <IconButton
-                        color="primary"
-                        onClick={() => handleSetReminder(quote.id, quote.tempReminderDays || 0)}
-                        disabled={!quote.tempReminderDays || quote.tempReminderDays < 1}
-                        sx={{ ml: 1 }}
-                      >
-                        <AddAlarmIcon />
-                      </IconButton>
-                    </Box>
-                  </Box>
-
-                  <Box className="card-actions">
-                    <Button
-                      className="action-button view"
-                      onClick={() => handleLoadQuote(quote.id)}
-                      size="small"
-                      startIcon={<VisibilityIcon />}
-                    >
-                      Voir
-                    </Button>
-
-                    <Button
-                      className="action-button"
-                      onClick={() => handleViewPriceOffer(quote)}
-                      size="small"
-                      color="primary"
-                      startIcon={<ReceiptLongOutlined />}
-                    >
-                      Voir l'offre de prix
-                    </Button>
-
-                    <Button
-                      className="action-button delete"
-                      onClick={() => handleDeleteQuote(quote.id)}
-                      size="small"
-                      color="error"
-                      startIcon={<DeleteIcon />}
-                    >
-                      Supprimer
-                    </Button>
-                  </Box>
-                </Card>
-              );
-            })
-          )}
+            </Box>
+          ))}
         </Box>
       </Container>
     </Layout>
