@@ -147,8 +147,13 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
   };
 
   const handleGeneratePDF = async () => {
+    let timeoutId: NodeJS.Timeout | null = null;
     try {
       setIsPdfMode(true);
+      // Fallback: in case PDF generation hangs, reset after 5 seconds
+      timeoutId = setTimeout(() => {
+        setIsPdfMode(false);
+      }, 5000);
       console.log('Current state:', {
         contentRef: contentRef.current,
         currentQuote: currentQuote,
@@ -159,6 +164,7 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
         console.error('Content reference is missing');
         alert('Impossible de générer le PDF: la référence au contenu est manquante');
         setIsPdfMode(false);
+        if (timeoutId) clearTimeout(timeoutId);
         return;
       }
 
@@ -166,6 +172,7 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
         console.error('Current quote is missing');
         alert('Impossible de générer le PDF: le devis actuel est manquant');
         setIsPdfMode(false);
+        if (timeoutId) clearTimeout(timeoutId);
         return;
       }
 
@@ -173,6 +180,7 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
         console.error('Quote is still loading');
         alert('Veuillez patienter pendant le chargement du devis');
         setIsPdfMode(false);
+        if (timeoutId) clearTimeout(timeoutId);
         return;
       }
 
@@ -210,6 +218,7 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
       alert('Erreur lors de la génération du PDF. Veuillez réessayer.');
     } finally {
       setIsPdfMode(false);
+      if (timeoutId) clearTimeout(timeoutId);
     }
   };
 
@@ -221,9 +230,16 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
     const handleAfterPrint = () => {
       setIsPdfMode(false);
       window.removeEventListener('afterprint', handleAfterPrint);
+      if (timeoutId) clearTimeout(timeoutId);
     };
 
     window.addEventListener('afterprint', handleAfterPrint);
+
+    // Fallback: in case afterprint is not fired, reset after 5 seconds
+    const timeoutId = setTimeout(() => {
+      setIsPdfMode(false);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    }, 5000);
   };
 
   // Show loading or error state
@@ -336,7 +352,7 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
           <table className="summary-table" style={{ float: 'right' }}>
             <tbody>
               <tr><th>TOTAL OFFRE USD HT:</th><td>{currentQuote.totalHT}</td></tr>
-              <tr><th>TVA:</th><td>{(currentQuote.totalHT * (currentQuote.tva / 100)).toFixed(2)}</td></tr>
+              <tr><th>TVA:</th><td>{(currentQuote.totalHT * (16 / 100)).toFixed(2)}</td></tr>
               <tr><th>TOTAL OFFRE USD TTC:</th><td>{currentQuote.totalTTC}</td></tr>
             </tbody>
           </table>
@@ -372,15 +388,15 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
                 <td>{item.quantity} </td>
                 <td>{item.priceEuro}</td>
                 <td>{(item.priceEuro * (currentQuote.supplyExchangeRate || 1.15)).toFixed(2)}</td>
-                <td>{((item.priceEuro * (currentQuote.supplyExchangeRate || 1.15)) * (1 + (currentQuote.supplyMarginRate || 0.75))).toFixed(2)}</td>
-                <td>{((item.quantity * item.priceEuro * (currentQuote.supplyExchangeRate || 1.15)) * (1 + (currentQuote.supplyMarginRate || 0.75))).toFixed(2)} </td>
+                <td>{((item.priceEuro * (currentQuote.supplyExchangeRate || 1.15)) * (1 / (currentQuote.supplyMarginRate || 0.75))).toFixed(2)}</td>
+                <td>{((item.quantity * item.priceEuro * (currentQuote.supplyExchangeRate || 1.15)) * (1 / (currentQuote.supplyMarginRate || 0.75))).toFixed(2)} </td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr className="totals-row">
               <td colSpan={5} style={{ textAlign: 'right' }}>TOTAL FOURNITURE $ HT:</td>
-              <td colSpan={2}>{currentQuote.supplyItems.reduce((sum, item) => sum + ((item.quantity * item.priceEuro * (currentQuote.supplyExchangeRate || 1.15)) * (1 + (currentQuote.supplyMarginRate || 0.75))), 0).toFixed(2)}</td>
+              <td colSpan={2}>{currentQuote.supplyItems.reduce((sum, item) => sum + ((item.quantity * item.priceEuro * (currentQuote.supplyExchangeRate || 1.15)) * (1 / (currentQuote.supplyMarginRate || 0.75))), 0).toFixed(2)}</td>
             </tr>
           </tfoot>
         </table>
@@ -418,15 +434,15 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
                 <td>{item.weekendMultiplier}</td>
                 <td>{item.priceEuro}</td>
                 <td>{(item.priceEuro * (currentQuote.laborExchangeRate || 1.2)).toFixed(2)}</td>
-                <td>{((item.priceEuro * (currentQuote.laborExchangeRate || 1.2)) * (1 + (currentQuote.laborMarginRate || 0.8))).toFixed(2)}</td>
-                <td>{((item.nbTechnicians * item.nbHours * item.priceEuro * (currentQuote.laborExchangeRate || 1.2)) * (1 + (currentQuote.laborMarginRate || 0.8))).toFixed(2)}</td>
+                <td>{((item.priceEuro * (currentQuote.laborExchangeRate || 1.2)) * (1 / (currentQuote.laborMarginRate || 0.8))).toFixed(2)}</td>
+                <td>{((item.nbTechnicians * item.nbHours * item.priceEuro * (currentQuote.laborExchangeRate || 1.2)) * (1 / (currentQuote.laborMarginRate || 0.8))).toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr className="totals-row">
               <td colSpan={6} style={{ textAlign: 'right' }}>TOTAL MO $ HT:</td>
-              <td colSpan={2}>{currentQuote.laborItems.reduce((sum, item) => sum + ((item.nbTechnicians * item.nbHours * item.priceEuro * (currentQuote.laborExchangeRate || 1.2)) * (1 + (currentQuote.laborMarginRate || 0.8))), 0).toFixed(2)}</td>
+              <td colSpan={2}>{currentQuote.laborItems.reduce((sum, item) => sum + ((item.nbTechnicians * item.nbHours * item.priceEuro * (currentQuote.laborExchangeRate || 1.2)) * (1 / (currentQuote.laborMarginRate || 0.8))), 0).toFixed(2)}</td>
             </tr>
           </tfoot>
         </table>
