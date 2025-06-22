@@ -46,7 +46,7 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
 
   // Load quote if ID is provided in URL
   useEffect(() => {
-    if (quoteId && !currentQuote && !isLoading) {
+    if (quoteId && !isLoading && (!currentQuote || currentQuote.id !== quoteId)) {
       const queryParams = new URLSearchParams(window.location.search);
       const fromHistory = queryParams.get('fromHistory') === 'true';
       // Fetch createdAt for the quoteId
@@ -64,7 +64,7 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
       };
       fetchAndLoad();
     }
-  }, [quoteId, isLoading, loadQuote]);
+  }, [quoteId, isLoading, loadQuote, currentQuote]);
 
   // Create a new quote if none exists and we're not loading one
   useEffect(() => {
@@ -91,13 +91,10 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
 
   // Handle home button click
   const handleHomeClick = () => {
-    if (currentPath === '/quote') {
+    if (currentPath === '/') {
       clearQuote();
-      createNewQuote();
-      onNavigate('/quote');
-    } else {
-      onNavigate('/');
     }
+    onNavigate('/');
   };
 
   const handleConfirmQuote = async () => {
