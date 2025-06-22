@@ -56,7 +56,7 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
           setError('Failed to fetch quote list');
           return;
         }
-        const quote = await apiService.getQuoteById(quoteIdFromUrl, createdAt);
+        const quote = await apiService.getQuoteById(quoteIdFromUrl);
         console.log('Fetched quote data:', quote);
 
         if (!quote) {

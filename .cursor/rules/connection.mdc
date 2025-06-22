@@ -38,10 +38,10 @@ ENDPOINTS = {
 
     # Quotes
     "List Quotes":         {"method": "GET",    "path": "/quotes"},
-    "Get Quote":           {"method": "GET",    "path": "/quotes/{id}/{created_at}"},
+    "Get Quote":           {"method": "GET",    "path": "/quotes/{id}"},
     "Create Quote":        {"method": "POST",   "path": "/quotes"},
-    "Update Quote":        {"method": "PUT",    "path": "/quotes/{id/{created_at}}"},
-    "Delete Quote":        {"method": "DELETE", "path": "/quotes/{id}/{created_at}"},
+    "Update Quote":        {"method": "PUT",    "path": "/quotes/{id}"},
+    "Delete Quote":        {"method": "DELETE", "path": "/quotes/{id}"},
 
     # Supply Items
     "List Supply Items":   {"method": "GET",    "path": "/supply_items"},

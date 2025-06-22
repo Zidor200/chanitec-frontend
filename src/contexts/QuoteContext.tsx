@@ -426,7 +426,7 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
   const loadQuote = async (id: string, createdAt: string, fromHistory: boolean = false) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      const quote = await apiService.getQuoteById(id, createdAt);
+      const quote = await apiService.getQuoteById(id);
       if (!quote) {
         throw new Error('Quote not found');
       }
@@ -468,7 +468,8 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
       } else {
         // For updating an existing quote: create a new quote with a new ID and parent reference
         isUpdate = true;
-        parentId = state.currentQuote.id;
+        // If the current quote has a parentId, use it; otherwise, use the current quote's id
+        parentId = state.currentQuote.parentId ? state.currentQuote.parentId : state.currentQuote.id;
         newId = generateQuoteId();
         quoteToSave = {
           ...state.currentQuote,
@@ -515,7 +516,7 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
       }
 
       // Fetch the complete updated quote with new items
-      const completeQuoteResponse = await apiService.getQuoteById(newId, quoteToSave.createdAt);
+      const completeQuoteResponse = await apiService.getQuoteById(newId);
       if (!completeQuoteResponse) {
         throw new Error('Failed to fetch updated quote');
       }
