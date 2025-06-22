@@ -104,6 +104,34 @@ const AppContent = () => {
   });
   const [priceOfferQuoteId, setPriceOfferQuoteId] = useState<string | undefined>();
 
+  // --- Warm-up logic start ---
+  const [isWarmingUp, setIsWarmingUp] = useState(false);
+
+  useEffect(() => {
+    const hasWarmedUp = localStorage.getItem('hasWarmedUp') === 'true';
+    if (!hasWarmedUp) {
+      setIsWarmingUp(true);
+      // Send a warm-up request to the backend
+      const controller = new AbortController();
+      const timeout = setTimeout(() => {
+        controller.abort();
+        setIsWarmingUp(false);
+        localStorage.setItem('hasWarmedUp', 'true');
+      }, 30000); // 30 seconds
+      fetch('/api/health', { signal: controller.signal })
+        .then(() => {
+          clearTimeout(timeout);
+          setIsWarmingUp(false);
+          localStorage.setItem('hasWarmedUp', 'true');
+        })
+        .catch(() => {
+          // Even if error, just end warm-up after 30s
+        });
+      return () => clearTimeout(timeout);
+    }
+  }, []);
+  // --- Warm-up logic end ---
+
   // Initialize app data
   useEffect(() => {
     const isInitialized = localStorage.getItem('app_initialized') === 'true';
@@ -168,114 +196,141 @@ const AppContent = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <QuoteProvider>
-        <Routes>
-          <Route
-            path="/login"
-            element={
-              isAuthenticated ?
-              <Navigate to="/home" replace /> :
-              <LoginPage onLogin={handleLogin} />
-            }
-          />
+      {/* Warm-up overlay */}
+      {isWarmingUp && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(255,255,255,0.95)',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 24
+        }}>
+          <div className="spinner" style={{ marginBottom: 20 }}>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="24" r="20" stroke="#1976d2" strokeWidth="4" strokeDasharray="100" strokeDashoffset="60"/>
+            </svg>
+          </div>
+          Initialisation du serveur... Veuillez patienter
+        </div>
+      )}
+      {/* App content */}
+      {!isWarmingUp && (
+        <QuoteProvider>
+          <Routes>
+            <Route
+              path="/login"
+              element={
+                isAuthenticated ?
+                <Navigate to="/home" replace /> :
+                <LoginPage onLogin={handleLogin} />
+              }
+            />
 
-          <Route
-            path="/home"
-            element={
-              <ProtectedRoute>
-                <HomePage />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/home"
+              element={
+                <ProtectedRoute>
+                  <HomePage />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/quote"
-            element={
-              <ProtectedRoute>
-                <QuotePage currentPath="/quote" onNavigate={handleNavigate} onLogout={handleLogout} />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/quote"
+              element={
+                <ProtectedRoute>
+                  <QuotePage currentPath="/quote" onNavigate={handleNavigate} onLogout={handleLogout} />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/quote-test"
-            element={
-              <ProtectedRoute>
-                <QuoteTest currentPath="/quote-test" onNavigate={handleNavigate} />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/quote-test"
+              element={
+                <ProtectedRoute>
+                  <QuoteTest currentPath="/quote-test" onNavigate={handleNavigate} />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/history"
-            element={
-              <ProtectedRoute>
-                <HistoryPage currentPath="/history" onNavigate={handleNavigate} />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/history"
+              element={
+                <ProtectedRoute>
+                  <HistoryPage currentPath="/history" onNavigate={handleNavigate} />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/clients"
-            element={
-              <ProtectedRoute>
-                <ClientsPage currentPath="/clients" onNavigate={handleNavigate} />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/clients"
+              element={
+                <ProtectedRoute>
+                  <ClientsPage currentPath="/clients" onNavigate={handleNavigate} />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/items"
-            element={
-              <ProtectedRoute>
-                <ItemsPage currentPath="/items" onNavigate={handleNavigate} />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/items"
+              element={
+                <ProtectedRoute>
+                  <ItemsPage currentPath="/items" onNavigate={handleNavigate} />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/price-offer"
-            element={
-              <ProtectedRoute>
-                <PriceOfferPage
-                  currentPath="/price-offer"
-                  onNavigate={handleNavigate}
-                  quoteId={priceOfferQuoteId}
-                />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/price-offer"
+              element={
+                <ProtectedRoute>
+                  <PriceOfferPage
+                    currentPath="/price-offer"
+                    onNavigate={handleNavigate}
+                    quoteId={priceOfferQuoteId}
+                  />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/intervention"
-            element={
-              <ProtectedRoute>
-                <InterventionPage />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/intervention"
+              element={
+                <ProtectedRoute>
+                  <InterventionPage />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/org-chart"
-            element={
-              <ProtectedRoute>
-                <OrgChartPage />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/org-chart"
+              element={
+                <ProtectedRoute>
+                  <OrgChartPage />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/employees"
-            element={
-              <ProtectedRoute>
-                <EmployeesPage />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/employees"
+              element={
+                <ProtectedRoute>
+                  <EmployeesPage />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route path="/" element={<Navigate to="/home" replace />} />
-        </Routes>
-      </QuoteProvider>
+            <Route path="/" element={<Navigate to="/home" replace />} />
+          </Routes>
+        </QuoteProvider>
+      )}
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}
