@@ -4,7 +4,7 @@
   width: 100%;
   align-items: center;
   justify-content: left;
-  gap: 10%;
+  gap: 7%;
   margin: 0 auto;
 }
 .reference-logo {
@@ -76,6 +76,7 @@
   text-transform: uppercase;
   margin: 0px 0 10px 0;
   text-align: left;
+  background: transparent !important;
 }
 .input-row {
   display: flex;
@@ -83,6 +84,7 @@
   margin-bottom: 10px;
   align-items: center;
   justify-content: space-between;
+  background: transparent !important;
 }
 .input-row input, .input-row select {
   padding: 6px 10px;
@@ -129,6 +131,7 @@
   border-collapse: collapse;
   margin-bottom: 10px;
   background: #fff;
+  background: transparent !important;
 }
 .data-table th, .data-table td {
   border: 1px solid #d3d3d3;
@@ -167,10 +170,12 @@
 .data-table tfoot td {
   font-weight: bold;
   background: #f8f9fa;
+  background: transparent !important;
 }
 .totals-row td {
   background: #f8f9fa;
   font-weight: bold;
+  background: transparent !important;
 }
 .clearfix::after {
   content: "";
@@ -236,7 +241,7 @@
     transform: translate(-50%, -50%);
     opacity: 0.1;
     z-index: -1;
-    width: 80%;
+    width: 70%;
     max-width: 600px;
     pointer-events: none;
   }
@@ -254,8 +259,40 @@
   transform: translate(-50%, -50%);
   opacity: 0.1;
   z-index: -1;
-  width: 80%;
+  width: 90%;
   max-width: 600px;
+  pointer-events: none;
+}
+
+.background-logo-second {
+  display: none;
+}
+
+@media print {
+  .background-logo-second {
+    position: fixed;
+    top: 100%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.1;
+    z-index: -1;
+    width: 60%;
+    max-width: 400px;
+    pointer-events: none;
+    display: block;
+  }
+}
+
+.is-pdf-mode .background-logo-second {
+  display: block;
+  position: fixed;
+  top: 90%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.1;
+  z-index: -1;
+  width: 60%;
+  max-width: 400px;
   pointer-events: none;
 }
 // --- End of added styles ---

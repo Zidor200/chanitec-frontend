@@ -111,13 +111,12 @@ const AppContent = () => {
     const hasWarmedUp = localStorage.getItem('hasWarmedUp') === 'true';
     if (!hasWarmedUp) {
       setIsWarmingUp(true);
-      // Send a warm-up request to the backend
       const controller = new AbortController();
       const timeout = setTimeout(() => {
         controller.abort();
         setIsWarmingUp(false);
         localStorage.setItem('hasWarmedUp', 'true');
-      }, 30000); // 30 seconds
+      }, 3000); // 3 seconds instead of 30
       fetch('/api/health', { signal: controller.signal })
         .then(() => {
           clearTimeout(timeout);
@@ -125,7 +124,9 @@ const AppContent = () => {
           localStorage.setItem('hasWarmedUp', 'true');
         })
         .catch(() => {
-          // Even if error, just end warm-up after 30s
+          // Proceed even if error
+          setIsWarmingUp(false);
+          localStorage.setItem('hasWarmedUp', 'true');
         });
       return () => clearTimeout(timeout);
     }

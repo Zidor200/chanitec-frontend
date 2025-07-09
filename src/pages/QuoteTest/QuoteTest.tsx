@@ -297,7 +297,9 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
     <Layout currentPath={currentPath} onNavigate={onNavigate} onHomeClick={handleHomeClick}>
       <div ref={contentRef} className={isPdfMode ? 'is-pdf-mode' : ''}>
         {/* Background Logo */}
-        <img src="/CHANitec.png" alt="Background Logo" className="background-logo" />
+        <img src="/logo512.png" alt="Background Logo" className="background-logo" />
+        {/* Second Background Logo */}
+        <img src="/CHANitec.png" alt="CHANitec Logo" className="background-logo-second" />
 
         {/* Header Section */}
         <div className="reference-header">

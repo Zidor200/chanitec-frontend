@@ -1,19 +1,14 @@
----
-description:
-globs:
-alwaysApply: false
----
 # Chanitec Backend Connection Information for Frontend
-# Fill in the actual values as needed.
+# Updated to match backend implementation as of current analysis.
 
-API_BASE_URL = "https://your-backend-domain.com/api"  # The base URL for the backend API
-API_VERSION = "v1"  # API version if applicable
+API_BASE_URL = "http://localhost:5000/api"  # The base URL for the backend API (update as needed)
+API_VERSION = null  # No explicit versioning in backend routes
 
 # Authentication
-AUTH_METHOD = "Bearer Token"  # e.g., 'Bearer Token', 'API Key', 'OAuth2', etc.
-AUTH_TOKEN_PLACEHOLDER = "<YOUR_AUTH_TOKEN_HERE>"  # Replace with actual token or method to retrieve it
+AUTH_METHOD = null  # No authentication enforced by backend as per current code
+AUTH_TOKEN_PLACEHOLDER = null  # Not required unless implemented later
 
-# Example Endpoints (CRUD for each resource)
+# Endpoints (CRUD for each resource, matching backend)
 ENDPOINTS = {
     # Clients
     "List Clients":        {"method": "GET",    "path": "/clients"},
@@ -28,6 +23,7 @@ ENDPOINTS = {
     "Create Site":         {"method": "POST",   "path": "/sites"},
     "Update Site":         {"method": "PUT",    "path": "/sites/{id}"},
     "Delete Site":         {"method": "DELETE", "path": "/sites/{id}"},
+    "Get Sites By Client": {"method": "GET",    "path": "/sites/by-client?clientId={clientId}"},
 
     # Items
     "List Items":          {"method": "GET",    "path": "/items"},
@@ -35,6 +31,8 @@ ENDPOINTS = {
     "Create Item":         {"method": "POST",   "path": "/items"},
     "Update Item":         {"method": "PUT",    "path": "/items/{id}"},
     "Delete Item":         {"method": "DELETE", "path": "/items/{id}"},
+    "Import Items":        {"method": "POST",   "path": "/items/import"},
+    "Clear Items":         {"method": "DELETE", "path": "/items/clear"},
 
     # Quotes
     "List Quotes":         {"method": "GET",    "path": "/quotes"},
@@ -42,33 +40,46 @@ ENDPOINTS = {
     "Create Quote":        {"method": "POST",   "path": "/quotes"},
     "Update Quote":        {"method": "PUT",    "path": "/quotes/{id}"},
     "Delete Quote":        {"method": "DELETE", "path": "/quotes/{id}"},
+    "Set Quote Reminder":  {"method": "PATCH",  "path": "/quotes/{id}/reminder"},
+    "Confirm Quote":       {"method": "PATCH",  "path": "/quotes/{id}/confirm"},
 
     # Supply Items
-    "List Supply Items":   {"method": "GET",    "path": "/supply_items"},
-    "Get Supply Item":     {"method": "GET",    "path": "/supply_items/{id}"},
-    "Create Supply Item":  {"method": "POST",   "path": "/supply_items"},
-    "Update Supply Item":  {"method": "PUT",    "path": "/supply_items/{id}"},
-    "Delete Supply Item":  {"method": "DELETE", "path": "/supply_items/{id}"},
+    "List Supply Items By Quote":   {"method": "GET",    "path": "/supply-items/{quoteId}"},
+    "Get Supply Item":              {"method": "GET",    "path": "/supply-items/item/{id}"},
+    "Create Supply Item":           {"method": "POST",   "path": "/supply-items/{quoteId}"},
+    "Update Supply Item":           {"method": "PUT",    "path": "/supply-items/{id}"},
+    "Delete Supply Item":           {"method": "DELETE", "path": "/supply-items/{id}"},
 
     # Labor Items
-    "List Labor Items":    {"method": "GET",    "path": "/labor_items"},
-    "Get Labor Item":      {"method": "GET",    "path": "/labor_items/{id}"},
-    "Create Labor Item":   {"method": "POST",   "path": "/labor_items"},
-    "Update Labor Item":   {"method": "PUT",    "path": "/labor_items/{id}"},
-    "Delete Labor Item":   {"method": "DELETE", "path": "/labor_items/{id}"},
+    "List Labor Items By Quote":    {"method": "GET",    "path": "/labor-items/{quoteId}"},
+    "Get Labor Item":               {"method": "GET",    "path": "/labor-items/item/{id}"},
+    "Create Labor Item":            {"method": "POST",   "path": "/labor-items/{quoteId}"},
+    "Update Labor Item":            {"method": "PUT",    "path": "/labor-items/{id}"},
+    "Delete Labor Item":            {"method": "DELETE", "path": "/labor-items/{id}"},
 
-    # Price Offers
-    "List Price Offers":   {"method": "GET",    "path": "/price_offers"},
-    "Get Price Offer":     {"method": "GET",    "path": "/price_offers/{id}"},
-    "Create Price Offer":  {"method": "POST",   "path": "/price_offers"},
-    "Update Price Offer":  {"method": "PUT",    "path": "/price_offers/{id}"},
-    "Delete Price Offer":  {"method": "DELETE", "path": "/price_offers/{id}"}
+    # Departments
+    "List Departments":     {"method": "GET",    "path": "/departments"},
+    "Get Department":       {"method": "GET",    "path": "/departments/{id}"},
+    "Create Department":    {"method": "POST",   "path": "/departments"},
+    "Update Department":    {"method": "PUT",    "path": "/departments/{id}"},
+    "Delete Department":    {"method": "DELETE", "path": "/departments/{id}"},
+
+    # Employees
+    "List Employees":       {"method": "GET",    "path": "/employees"},
+    "Get Employee":         {"method": "GET",    "path": "/employees/{id}"},
+    "Create Employee":      {"method": "POST",   "path": "/employees"},
+    "Update Employee":      {"method": "PUT",    "path": "/employees/{id}"},
+    "Delete Employee":      {"method": "DELETE", "path": "/employees/{id}"},
+
+    # Debug
+    "Get Database Structure": {"method": "GET", "path": "/debug/database-structure"},
+    "Test Site Lookup":       {"method": "GET", "path": "/debug/test-site-lookup/{clientId}"}
 }
 
 # CORS Settings (Cross-Origin Resource Sharing)
 CORS = {
-    "allowed_origins": ["http://localhost:3000", "https://your-frontend-domain.com"],  # List of allowed origins
-    "allowed_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # HTTP methods allowed
+    "allowed_origins": ["http://localhost:3000", "http://localhost:5000"],  # List of allowed origins
+    "allowed_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],  # HTTP methods allowed
     "allowed_headers": ["Content-Type", "Authorization"],  # Headers allowed in requests
     "allow_credentials": true  # Whether to allow credentials (cookies, authorization headers, etc.)
 }
@@ -77,6 +88,11 @@ CORS = {
 # DATABASE_TYPE = "MySQL"
 # DATABASE_HOST = "<DB_HOST>"
 # DATABASE_PORT = 3306
+# DATABASE_NAME = "Chanitec"
+# (Note: Frontend should NOT connect directly to the database for security reasons)
+
+# Add any other relevant connection or environment details below
+# ...
 # DATABASE_NAME = "Chanitec"
 # (Note: Frontend should NOT connect directly to the database for security reasons)
 

@@ -24,6 +24,9 @@ import AddAlarmIcon from '@mui/icons-material/AddAlarm';
 import { Client, Site, Quote } from '../../models/Quote';
 import { apiService } from '../../services/api-service';
 import { extractBaseId } from '../../utils/id-generator';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberInput';
 
 interface HistoryPageProps {
   currentPath: string;
@@ -176,7 +179,12 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
 
   // Handlers for quote card actions
   const handleLoadQuote = (quoteId: string) => {
-    onNavigate(`/quote?id=${quoteId}`);
+    const quote = quotes.find(q => q.id === quoteId);
+    if (quote && quote.confirmed) {
+      onNavigate(`/quote?id=${quoteId}`);
+    } else {
+      onNavigate(`/quote?id=${quoteId}&showConfirm=true`);
+    }
   };
   const handleDeleteQuote = async (quoteId: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce devis ?')) {
@@ -331,6 +339,12 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                         <Typography component="span" className="id-number">
                           {quote.id}
                         </Typography>
+                        {/* Check icon for confirmed status */}
+                        {quote.confirmed ? (
+                          <CheckCircleIcon sx={{ color: '#4caf50', ml: 1 }} titleAccess="Confirmé" />
+                        ) : (
+                          <CheckCircleOutlineIcon sx={{ color: '#bdbdbd', ml: 1 }} titleAccess="Non confirmé" />
+                        )}
                         <Typography component="span" className={`version-label ${isOriginal ? 'original' : 'update'}`}
                           sx={{ ml: 1 }}>
                           {isOriginal ? 'Version originale' : `Version ${idx}`}
@@ -363,8 +377,13 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                         </Box>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2, borderTop: '1px solid rgba(0, 0, 0, 0.12)', paddingTop: 2 }}>
-                        <TextField label="Jours de rappel" value={reminderDays[quote.id] || 0} size="small" variant="outlined" type="number"
-                          onChange={e => handleReminderChange(quote.id, Number(e.target.value))} />
+                        <CustomNumberInput
+                          label="Jours de rappel"
+                          value={reminderDays[quote.id] || 0}
+                          onChange={value => handleReminderChange(quote.id, value)}
+                          min={0}
+                          fullWidth={false}
+                        />
                         <IconButton color="primary" sx={{ ml: 1 }} onClick={() => handleSetReminder(quote.id)}>
                           <AddAlarmIcon />
                         </IconButton>

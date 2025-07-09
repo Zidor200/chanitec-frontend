@@ -206,6 +206,21 @@ class ApiService {
 
         return await response.json();
     }
+
+    // Confirm a quote
+    /**
+     * Set the confirmation status of a quote.
+     * @param id Quote ID
+     * @param confirmed Boolean (true or false)
+     * @param number_chanitec String (required)
+     * @returns { message: string }
+     */
+    async confirmQuote(id: string, confirmed: boolean = true, number_chanitec: string): Promise<{ message: string }> {
+        return this.fetchApi<{ message: string }>(`/quotes/${id}/confirm`, {
+            method: 'PATCH',
+            body: JSON.stringify({ confirmed, number_chanitec }),
+        });
+    }
 }
 
 // Export a singleton instance

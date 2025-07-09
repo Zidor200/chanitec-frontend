@@ -284,6 +284,17 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
                 ECOBANK USD 00 026-00001-03600841201-27
               </Typography>
             </Box>
+            {/* Signatures */}
+            <Box className="signatures-row">
+              <Box className="signature signature-left">
+                <Typography variant="subtitle2">Signature 1</Typography>
+                <Box className="signature-line"></Box>
+              </Box>
+              <Box className="signature signature-right">
+                <Typography variant="subtitle2">Signature 2</Typography>
+                <Box className="signature-line"></Box>
+              </Box>
+            </Box>
           </Paper>
         </div>
         <Box className="actions-bar" sx={{ mb: 2 }}>

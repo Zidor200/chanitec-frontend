@@ -11,6 +11,12 @@ import './QuotePage.scss';
 import logo from '../../logo.png';
 import { useLocation } from 'react-router-dom';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import { apiService } from '../../services/api-service';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
 
 interface QuotePageProps {
   currentPath: string;
@@ -43,6 +49,9 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
   const [isFromHistory, setIsFromHistory] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [numberChanitec, setNumberChanitec] = useState(currentQuote?.number_chanitec || '');
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
   // Load quote if ID is provided in URL
   useEffect(() => {
@@ -77,8 +86,10 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
     const queryParams = new URLSearchParams(window.location.search);
     const fromHistory = queryParams.get('fromHistory') === 'true';
     const confirmed = queryParams.get('confirmed') === 'true';
+    const showConfirmParam = queryParams.get('showConfirm') === 'true';
     setIsFromHistory(fromHistory);
     setIsConfirmed(confirmed);
+    setShowConfirm(showConfirmParam);
   }, []);
 
   // Update isReadOnly when currentQuote changes
@@ -86,6 +97,7 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
     if (currentQuote) {
       setIsReadOnly(currentQuote.confirmed || false);
       setIsConfirmed(currentQuote.confirmed || false);
+      setNumberChanitec(currentQuote.number_chanitec || '');
     }
   }, [currentQuote]);
 
@@ -97,28 +109,35 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
     onNavigate('/');
   };
 
-  const handleConfirmQuote = async () => {
+  const handleOpenConfirmDialog = () => {
+    setConfirmDialogOpen(true);
+  };
+
+  const handleCloseConfirmDialog = () => {
+    setConfirmDialogOpen(false);
+  };
+
+  const handleSaveConfirm = async () => {
     if (!currentQuote) return;
-
+    if (!numberChanitec) {
+      alert('Veuillez saisir le numéro CHANitec.');
+      return;
+    }
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/quotes/${currentQuote.id}/confirm`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ confirmed: true }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to confirm quote');
-      }
-
+      const response = await apiService.confirmQuote(currentQuote.id, true, numberChanitec);
       setIsConfirmed(true);
-      // Show success message
-      alert('Devis confirmé avec succès');
-    } catch (error) {
+      setIsReadOnly(true);
+      setConfirmDialogOpen(false);
+      alert(response.message || 'Devis confirmé avec succès');
+    } catch (error: any) {
+      if (error instanceof Error && error.message.includes('400')) {
+        alert('Requête invalide : le champ "confirmed" doit être un booléen ou le numéro CHANitec est manquant.');
+      } else if (error instanceof Error && error.message.includes('404')) {
+        alert('Devis introuvable.');
+      } else {
+        alert('Erreur lors de la confirmation du devis. Veuillez réessayer.');
+      }
       console.error('Error confirming quote:', error);
-      alert('Erreur lors de la confirmation du devis');
     }
   };
 
@@ -205,11 +224,11 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
       </Container>
 
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mb: 2 }}>
-        {isFromHistory && (
+        {(showConfirm && !isConfirmed) || isFromHistory ? (
           <Button
             variant="contained"
             startIcon={<CheckCircleOutlineIcon />}
-            onClick={handleConfirmQuote}
+            onClick={handleOpenConfirmDialog}
             disabled={isConfirmed}
             sx={{
               backgroundColor: isConfirmed ? '#4caf50' : '#1976d2',
@@ -224,8 +243,27 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
           >
             {isConfirmed ? 'Devis Confirmé' : 'Confirmer le Devis'}
           </Button>
-        )}
+        ) : null}
       </Box>
+      <Dialog open={confirmDialogOpen} onClose={handleCloseConfirmDialog}>
+        <DialogTitle>Confirmer le Devis</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Numéro CHANitec"
+            type="text"
+            fullWidth
+            value={numberChanitec}
+            onChange={e => setNumberChanitec(e.target.value)}
+            disabled={isConfirmed}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseConfirmDialog} color="secondary">Annuler</Button>
+          <Button onClick={handleSaveConfirm} color="primary" variant="contained" disabled={isConfirmed}>Sauvegarder</Button>
+        </DialogActions>
+      </Dialog>
 
       <QuoteActions
         clientName={currentQuote.clientName}

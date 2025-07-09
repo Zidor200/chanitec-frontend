@@ -468,8 +468,12 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
       } else {
         // For updating an existing quote: create a new quote with a new ID and parent reference
         isUpdate = true;
-        // If the current quote has a parentId, use it; otherwise, use the current quote's id
-        parentId = state.currentQuote.parentId ? state.currentQuote.parentId : state.currentQuote.id;
+        // If the current quote has a parentId, use it (unless it's 0 or '0'); otherwise, use the current quote's id
+        let rawParentId = state.currentQuote.parentId;
+        if (rawParentId === '0') {
+          rawParentId = undefined;
+        }
+        parentId = rawParentId ? rawParentId : state.currentQuote.id;
         newId = generateQuoteId();
         quoteToSave = {
           ...state.currentQuote,
