@@ -25,6 +25,7 @@ interface PriceOfferPageProps {
 
 const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate, quoteId }) => {
   const [priceOffer, setPriceOffer] = useState<PriceOffer | null>(null);
+  const [numberToDisplay, setNumberToDisplay] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -43,11 +44,13 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
       try {
         // Find the quote in the list to get createdAt
         let createdAt = '';
+        let numberToDisplayLocal = '';
         try {
           const allQuotes = await fetch(`${process.env.REACT_APP_API_URL}/quotes`).then(res => res.json());
           const found = allQuotes.find((q: any) => q.id === quoteIdFromUrl);
           if (found) {
             createdAt = found.createdAt;
+            numberToDisplayLocal = found.number_chanitec && found.number_chanitec.trim() !== '' ? found.number_chanitec : found.id;
           } else {
             setError('Quote not found');
             return;
@@ -87,6 +90,7 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
         console.log('Created and saved price offer:', savedOffer);
 
         setPriceOffer(savedOffer);
+        setNumberToDisplay(numberToDisplayLocal || (quote.number_chanitec && quote.number_chanitec.trim() !== '' ? quote.number_chanitec : quote.id));
       } catch (error) {
         console.error('Error loading price offer:', error);
         setError('Failed to load price offer. Please try again.');
@@ -111,17 +115,15 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
     });
 
     const imgData = canvas.toDataURL('image/png');
+    // Set PDF size to match the rendered content (no A4 limitation)
     const pdf = new jsPDF({
       orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
+      unit: 'px',
+      format: [canvas.width, canvas.height]
     });
 
-    const imgWidth = 210; // A4 width in mm
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-    pdf.save(`Offer de Prix_${priceOffer?.quoteId || 'unknown'}.pdf`);
+    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+    pdf.save(`Offer de Prix_${numberToDisplay || priceOffer?.quoteId || 'unknown'}.pdf`);
   };
 
   if (error) {
@@ -176,7 +178,7 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
                 <Typography variant="subtitle2">DATE</Typography>
               </Box>
               <Box className="info-box">
-                <Typography variant="body1">{priceOffer.quoteId}</Typography>
+                <Typography variant="body1">{numberToDisplay || priceOffer.quoteId}</Typography>
                 <Typography variant="body1">{priceOffer.clientName}</Typography>
                 <Typography variant="body1">{priceOffer.object}</Typography>
                 <Typography variant="body1">{format(new Date(priceOffer.date), 'dd/MM/yyyy')}</Typography>
@@ -284,16 +286,30 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
                 ECOBANK USD 00 026-00001-03600841201-27
               </Typography>
             </Box>
-            {/* Signatures */}
-            <Box className="signatures-row">
+            {/* Signatures and Footer (Updated) */}
+            <Box className="signatures-row updated-signatures">
               <Box className="signature signature-left">
-                <Typography variant="subtitle2">Signature 1</Typography>
-                <Box className="signature-line"></Box>
+                <Typography variant="subtitle2" fontWeight="bold">Bilel AYACHI</Typography>
+                <Typography variant="body2" fontWeight="bold">Responsable Dpt Climatisation et Froid</Typography>
+                <Box className="signature-placeholder" sx={{ minHeight: '60px', margin: '16px 0', display: 'block', textAlign: 'center' }}>
+                  <img src="/signature-ayachi.png" alt="Signature Bilel Ayachi" style={{ maxHeight: '60px', maxWidth: '100%', display: 'block', margin: '0 auto' }} />
+                </Box>
               </Box>
               <Box className="signature signature-right">
-                <Typography variant="subtitle2">Signature 2</Typography>
-                <Box className="signature-line"></Box>
+                <Typography variant="subtitle2" fontWeight="bold">Amandine PERRACHE - MINESI</Typography>
+                <Typography variant="body2" fontWeight="bold">Directrice Commerciale</Typography>
+                <Box className="signature-placeholder" sx={{ minHeight: '60px', margin: '16px 0', display: 'block', textAlign: 'center' }}>
+                  <img src="/signature-perrache.png.png" alt="Signature Amandine Perrache" style={{ maxHeight: '60px', maxWidth: '100%', display: 'block', margin: '0 auto' }} />
+                </Box>
               </Box>
+            </Box>
+            <Box className="price-offer-note" sx={{ textAlign: 'center', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+              NB: Votre commande implique l’acceptation de nos conditions générales de vente consultables sur notre site web www.chanic.com
+            </Box>
+            <Box className="price-offer-footer" sx={{ borderTop: '1px solid #000', paddingTop: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>
+              <div>Groupe Chanimetal</div>
+              <div>Avenue de la Montagne n°2297, C/Ngaliema, Kinshasa, R.D. CONGO - +243(0)81 715 27 20 - groupechanimetal@chanic.com</div>
+              <div>RCCM 14-B-3324 Kin – Id Nat 01-F4200-A22984H – NIF A070005Q2 – TVA 0390</div>
             </Box>
           </Paper>
         </div>
