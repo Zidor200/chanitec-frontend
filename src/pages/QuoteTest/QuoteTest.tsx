@@ -139,7 +139,9 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
 
       setIsConfirmed(true);
       setIsReadOnly(true);
-      alert('Devis confirmé avec succès');
+      alert('Devis confirmé avec succès. Prêt pour un nouveau devis.');
+      clearQuote();
+      createNewQuote();
     } catch (error) {
       console.error('Error confirming quote:', error);
       alert('Erreur lors de la confirmation du devis');
@@ -450,7 +452,7 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
         </table>
 
         {/* Action Buttons */}
-        {(!isPdfMode && typeof window !== 'undefined' && !window.matchMedia('print').matches) && (
+        {!isPdfMode && (
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, margin: '30px 0' }}>
             <button className="btn-print" onClick={handleGeneratePDF}>Telecharger PDF</button>
             <button className="btn-save" onClick={handlePrint}> {'Imprimer'}</button>

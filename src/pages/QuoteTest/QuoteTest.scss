@@ -17,6 +17,12 @@
   text-transform: uppercase;
   text-align: center;
   letter-spacing: 1px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  margin: 0 auto;
+  right: unset;
 }
 .reference-subtitle {
   font-size: 18px;
@@ -247,31 +253,30 @@
   }
 }
 
-.background-logo {
-  display: none;
-}
-
-.is-pdf-mode .background-logo {
-  display: block;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  opacity: 0.1;
-  z-index: -1;
-  width: 90%;
-  max-width: 600px;
-  pointer-events: none;
-}
-
+// Hide background logos by default
+.background-logo,
 .background-logo-second {
   display: none;
 }
 
-@media print {
-  .background-logo-second {
+// --- Unified Print and PDF Styles ---
+@media print, screen and (class: is-pdf-mode) {
+  .background-logo {
+    display: block;
     position: fixed;
-    top: 100%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.1;
+    z-index: -1;
+    width: 90%;
+    max-width: 600px;
+    pointer-events: none;
+  }
+  .background-logo-second {
+    display: block;
+    position: fixed;
+    top: 90%;
     left: 50%;
     transform: translate(-50%, -50%);
     opacity: 0.1;
@@ -279,21 +284,8 @@
     width: 60%;
     max-width: 400px;
     pointer-events: none;
-    display: block;
   }
 }
 
-.is-pdf-mode .background-logo-second {
-  display: block;
-  position: fixed;
-  top: 90%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  opacity: 0.1;
-  z-index: -1;
-  width: 60%;
-  max-width: 400px;
-  pointer-events: none;
-}
 // --- End of added styles ---
 

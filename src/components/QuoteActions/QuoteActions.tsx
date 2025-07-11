@@ -37,12 +37,7 @@ const QuoteActions: React.FC<QuoteActionsProps> = ({
   onPrint,
   onDownloadPDF
 }) => {
-  const {
-    state,
-    saveQuote,
-    updateQuote,
-    setQuoteField
-  } = useQuote();
+  const { state, saveQuote, updateQuote, setQuoteField, clearQuote, createNewQuote } = useQuote();
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState('');
   const [snackbarSeverity, setSnackbarSeverity] = React.useState<'success' | 'error'>('success');
@@ -67,8 +62,12 @@ const QuoteActions: React.FC<QuoteActionsProps> = ({
       const success = await onSave();
 
       if (success) {
-        setSnackbarMessage('Devis enregistré avec succès!');
+        setSnackbarMessage('Devis enregistré avec succès! Prêt pour un nouveau devis.');
         setSnackbarSeverity('success');
+        window.location.href = '/quote';
+        clearQuote();
+        createNewQuote();
+        alert('Devis enregistré avec succès! Prêt pour un nouveau devis.');
       } else {
         setSnackbarMessage('Erreur lors de l\'enregistrement du devis.');
         setSnackbarSeverity('error');
@@ -156,8 +155,11 @@ const QuoteActions: React.FC<QuoteActionsProps> = ({
         const success = await updateQuote();
 
         if (success) {
-          setSnackbarMessage('Devis mis à jour avec succès!');
+          setSnackbarMessage('Devis mis à jour avec succès! Prêt pour un nouveau devis.');
           setSnackbarSeverity('success');
+          clearQuote();
+          createNewQuote();
+          alert('Devis mis à jour avec succès! Prêt pour un nouveau devis.');
         } else {
           throw new Error('Failed to update quote');
         }

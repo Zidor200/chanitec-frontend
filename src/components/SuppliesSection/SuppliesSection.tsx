@@ -69,6 +69,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
   const [editPriceDialogOpen, setEditPriceDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<SupplyItem | null>(null);
   const [editPrice, setEditPrice] = useState<number>(0);
+  const [editQuantity, setEditQuantity] = useState<number>(1);
 
   // Load catalog items on component mount
   useEffect(() => {
@@ -193,6 +194,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
   const handleOpenEditPriceDialog = (item: SupplyItem) => {
     setEditingItem(item);
     setEditPrice(item.priceEuro);
+    setEditQuantity(item.quantity);
     setEditPriceDialogOpen(true);
   };
 
@@ -200,13 +202,15 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
     setEditPriceDialogOpen(false);
     setEditingItem(null);
     setEditPrice(0);
+    setEditQuantity(1);
   };
 
   const handleUpdatePrice = () => {
     if (editingItem) {
       const updatedItem = {
         ...editingItem,
-        priceEuro: editPrice
+        priceEuro: editPrice,
+        quantity: editQuantity
       };
       onUpdateSupplyItem(updatedItem);
       handleCloseEditPriceDialog();
@@ -473,7 +477,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle>Modifier le prix</DialogTitle>
+        <DialogTitle>Modifier le prix et la quantité</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="textSecondary" paragraph>
             Article: {editingItem?.description}
@@ -487,6 +491,15 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
             fullWidth
             margin="normal"
           />
+          <CustomNumberInput
+            label="Quantité"
+            value={editQuantity}
+            onChange={setEditQuantity}
+            min={1}
+            step={1}
+            fullWidth
+            margin="normal"
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseEditPriceDialog} color="primary">
@@ -496,7 +509,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
             onClick={handleUpdatePrice}
             color="primary"
             variant="contained"
-            disabled={editPrice <= 0}
+            disabled={editPrice <= 0 || editQuantity < 1}
           >
             Mettre à jour
           </Button>
