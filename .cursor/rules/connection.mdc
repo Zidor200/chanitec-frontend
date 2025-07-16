@@ -33,6 +33,7 @@ ENDPOINTS = {
     "Delete Item":         {"method": "DELETE", "path": "/items/{id}"},
     "Import Items":        {"method": "POST",   "path": "/items/import"},
     "Clear Items":         {"method": "DELETE", "path": "/items/clear"},
+    # NOTE: As of latest backend update, 'Create Item' and 'Update Item' require 'description', 'price', and 'quantity' fields in the request body.
 
     # Quotes
     "List Quotes":         {"method": "GET",    "path": "/quotes"},

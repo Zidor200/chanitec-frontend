@@ -221,6 +221,21 @@ class ApiService {
             body: JSON.stringify({ confirmed, number_chanitec }),
         });
     }
+
+    // Exchange Rate
+    async getExchangeRate(base: string = 'EUR', target: string = 'USD'): Promise<number> {
+        const API_KEY = '8d8220c1bc4f1aa5e98ff382';
+        const url = `https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${base}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Failed to fetch exchange rate');
+        }
+        const data = await response.json();
+        if (data.result !== 'success' || !data.conversion_rates || !data.conversion_rates[target]) {
+            throw new Error('Invalid exchange rate data');
+        }
+        return data.conversion_rates[target];
+    }
 }
 
 // Export a singleton instance

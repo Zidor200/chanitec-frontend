@@ -6,6 +6,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  DialogContentText,
   IconButton,
   Paper,
   Table,
@@ -16,13 +17,16 @@ import {
   TableRow,
   TextField,
   Typography,
-  MenuItem
+  MenuItem,
+  Alert,
+  Chip
 } from '@mui/material';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  Warning as WarningIcon
 } from '@mui/icons-material';
 import { SupplyItem } from '../../models/Quote';
 import { apiService } from '../../services/api-service';
@@ -70,6 +74,9 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
   const [editingItem, setEditingItem] = useState<SupplyItem | null>(null);
   const [editPrice, setEditPrice] = useState<number>(0);
   const [editQuantity, setEditQuantity] = useState<number>(1);
+  const [quantityWarningDialogOpen, setQuantityWarningDialogOpen] = useState(false);
+  const [pendingItem, setPendingItem] = useState<SupplyItem | null>(null);
+  const [pendingQuantity, setPendingQuantity] = useState<number>(1);
 
   // Load catalog items on component mount
   useEffect(() => {
@@ -87,7 +94,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
             id: itemAny.id,
             description: description,
             priceEuro: parseFloat(itemAny.price) || 0,
-            quantity: 1
+            quantity: itemAny.quantity !== undefined && itemAny.quantity !== null ? Number(itemAny.quantity) : 0
           } as SupplyItem;
         });
 
@@ -178,17 +185,48 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
   // Handle adding a regular item
   const handleAddItem = () => {
     if (selectedItem) {
-      const calculatedItem = calculateSupplyItemTotal(selectedItem, exchangeRate, marginRate);
-      onAddItem({
-        description: calculatedItem.description,
-        quantity: quantity,
-        priceEuro: calculatedItem.priceEuro,
-        priceDollar: calculatedItem.priceDollar,
-        unitPriceDollar: calculatedItem.unitPriceDollar,
-        totalPriceDollar: calculatedItem.totalPriceDollar
-      });
-      handleCloseSearchDialog();
+      // Check if selected quantity exceeds available quantity
+      if (quantity > selectedItem.quantity && selectedItem.quantity > 0) {
+        setPendingItem(selectedItem);
+        setPendingQuantity(quantity);
+        setQuantityWarningDialogOpen(true);
+        return;
+      }
+
+      // Proceed with adding item
+      addItemToQuote(selectedItem, quantity);
     }
+  };
+
+  // Helper function to add item to quote
+  const addItemToQuote = (item: SupplyItem, qty: number) => {
+    const calculatedItem = calculateSupplyItemTotal(item, exchangeRate, marginRate);
+    onAddItem({
+      description: calculatedItem.description,
+      quantity: qty,
+      priceEuro: calculatedItem.priceEuro,
+      priceDollar: calculatedItem.priceDollar,
+      unitPriceDollar: calculatedItem.unitPriceDollar,
+      totalPriceDollar: calculatedItem.totalPriceDollar
+    });
+    handleCloseSearchDialog();
+  };
+
+  // Handle quantity warning confirmation
+  const handleQuantityWarningConfirm = () => {
+    if (pendingItem) {
+      addItemToQuote(pendingItem, pendingQuantity);
+      setQuantityWarningDialogOpen(false);
+      setPendingItem(null);
+      setPendingQuantity(1);
+    }
+  };
+
+  // Handle quantity warning cancel
+  const handleQuantityWarningCancel = () => {
+    setQuantityWarningDialogOpen(false);
+    setPendingItem(null);
+    setPendingQuantity(1);
   };
 
   const handleOpenEditPriceDialog = (item: SupplyItem) => {
@@ -278,6 +316,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
         <Table size="small" aria-label="supplies table">
           <TableHead>
             <TableRow>
+              <TableCell>N°</TableCell>
               <TableCell>Description</TableCell>
               <TableCell align="right">Qté</TableCell>
               <TableCell align="right">PR €</TableCell>
@@ -290,13 +329,14 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center">
+                <TableCell colSpan={8} align="center">
                   Aucun article ajouté
                 </TableCell>
               </TableRow>
             ) : (
-              items.map((item) => (
+              items.map((item, index) => (
                 <TableRow key={item.id}>
+                  <TableCell>{index + 1}</TableCell>
                   <TableCell>{item.description}</TableCell>
                   <TableCell align="right">{item.quantity}</TableCell>
                   <TableCell align="right">{Number(item.priceEuro || 0).toFixed(2)}</TableCell>
@@ -381,7 +421,20 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
                       className={selectedItem?.id === item.id ? 'selected-item' : ''}
                       onClick={() => handleSelectItem(item)}
                     >
-                      <TableCell>{item.description}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {item.description}
+                          {item.quantity === 0 && (
+                            <Chip
+                              icon={<WarningIcon />}
+                              label="Stock épuisé"
+                              size="small"
+                              color="warning"
+                              variant="outlined"
+                            />
+                          )}
+                        </Box>
+                      </TableCell>
                       <TableCell align="right">{Number(item.priceEuro || 0).toFixed(2)}</TableCell>
                       <TableCell align="center">
                         <Button
@@ -512,6 +565,42 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
             disabled={editPrice <= 0 || editQuantity < 1}
           >
             Mettre à jour
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Quantity Warning Dialog */}
+      <Dialog
+        open={quantityWarningDialogOpen}
+        onClose={handleQuantityWarningCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <WarningIcon color="warning" />
+            Quantité insuffisante
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Vous avez sélectionné <strong>{pendingQuantity}</strong> unités de <strong>"{pendingItem?.description}"</strong>,
+            mais seulement <strong>{pendingItem?.quantity}</strong> unités sont disponibles en stock.
+          </DialogContentText>
+          <DialogContentText sx={{ mt: 2 }}>
+            Voulez-vous quand même ajouter cet article avec la quantité demandée ?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleQuantityWarningCancel} color="primary">
+            Annuler
+          </Button>
+          <Button
+            onClick={handleQuantityWarningConfirm}
+            color="warning"
+            variant="contained"
+          >
+            Ajouter quand même
           </Button>
         </DialogActions>
       </Dialog>

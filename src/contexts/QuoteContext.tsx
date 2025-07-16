@@ -386,7 +386,14 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(quoteReducer, initialState);
 
   // Create a new quote
-  const createNewQuote = () => {
+  const createNewQuote = async () => {
+    let exchangeRate = DEFAULT_EXCHANGE_RATE;
+    try {
+      exchangeRate = await apiService.getExchangeRate('EUR', 'USD');
+      exchangeRate = Math.round(exchangeRate * 1000) / 1000;
+    } catch (e) {
+      console.warn('Failed to fetch real-time exchange rate, using default:', e);
+    }
     const newQuote: Quote = {
       id: generateQuoteId(), // This will create ID with version 000
       clientName: '',
@@ -395,9 +402,9 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
       date: new Date().toISOString().split('T')[0],
       supplyDescription: DEFAULT_DESCRIPTION,
       laborDescription: DEFAULT_DESCRIPTION,
-      supplyExchangeRate: DEFAULT_EXCHANGE_RATE,
+      supplyExchangeRate: exchangeRate,
       supplyMarginRate: DEFAULT_MARGIN_RATE,
-      laborExchangeRate: DEFAULT_LABOR_EXCHANGE_RATE,
+      laborExchangeRate: exchangeRate,
       laborMarginRate: DEFAULT_LABOR_MARGIN_RATE,
       supplyItems: [],
       laborItems: [],
@@ -453,6 +460,17 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
       let isUpdate = false;
       let parentId: string | undefined = undefined;
 
+      // Always refresh exchange rate before saving
+      let exchangeRate = DEFAULT_EXCHANGE_RATE;
+      try {
+        exchangeRate = await apiService.getExchangeRate('EUR', 'USD');
+        exchangeRate = Math.round(exchangeRate * 1000) / 1000;
+      } catch (e) {
+        console.warn('Failed to fetch real-time exchange rate, using default:', e);
+      }
+      quoteToSave.supplyExchangeRate = exchangeRate;
+      quoteToSave.laborExchangeRate = exchangeRate;
+
       // If it's a new quote (no ID or version 0), create it
       if (!state.currentQuote.id || state.currentQuote.version === 0) {
         // Create new quote
@@ -482,6 +500,8 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
           version: 1,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          supplyExchangeRate: exchangeRate,
+          laborExchangeRate: exchangeRate,
           metadata: {
             ...state.currentQuote.metadata,
             version: 1,

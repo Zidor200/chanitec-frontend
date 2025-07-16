@@ -13,6 +13,18 @@ import {
 } from '@mui/icons-material';
 import { SupplyItem, LaborItem } from '../../models/Quote';
 import { generateId } from '../../utils/id-generator';
+import logo512 from '../../assets/logo512.png';
+import CHANitec from '../../assets/CHANitec.png';
+
+// Add a helper function for date formatting at the top level
+function formatDate(dateString: string) {
+  if (!dateString) return '';
+  const d = new Date(dateString);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
 
 interface QuoteTestProps {
   currentPath: string;
@@ -190,19 +202,13 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
       const element = contentRef.current;
 
       const opt = {
-        margin: 10,
+        margin: 5, // Set margin to 0 for closer print match
         filename: `devis-${currentQuote.id}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
-          scale: 2,
+          scale: 1.25, // Adjust scale for closer print match
           useCORS: true,
           logging: true
-        },
-        jsPDF: {
-          unit: 'mm',
-          format: 'a4',
-          orientation: 'portrait',
-          putTotalPages: true
         },
         enableLinks: true,
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
@@ -299,9 +305,9 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
     <Layout currentPath={currentPath} onNavigate={onNavigate} onHomeClick={handleHomeClick}>
       <div ref={contentRef} className={isPdfMode ? 'is-pdf-mode' : ''}>
         {/* Background Logo */}
-        <img src="/logo512.png" alt="Background Logo" className="background-logo" />
+        <img src={logo512} alt="Background Logo" className="background-logo" />
         {/* Second Background Logo */}
-        <img src="/CHANitec.png" alt="CHANitec Logo" className="background-logo-second" />
+        <img src={CHANitec} alt="CHANitec Logo" className="background-logo-second" />
 
         {/* Header Section */}
         <div className="reference-header">
@@ -341,12 +347,20 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
             </div>
             <div className="client-info-label">DATE:</div>
             <div className="client-info-value">
-              <input
-                type="date"
-                value={currentQuote.date}
-                onChange={e => setQuoteField('date', e.target.value)}
-                disabled={isReadOnly}
-              />
+              {isPdfMode ? (
+                <input
+                  type="text"
+                  value={formatDate(currentQuote.date)}
+                  disabled
+                />
+              ) : (
+                <input
+                  type="date"
+                  value={currentQuote.date}
+                  onChange={e => setQuoteField('date', e.target.value)}
+                  disabled={isReadOnly}
+                />
+              )}
             </div>
           </div>
         </div>

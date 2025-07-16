@@ -238,18 +238,16 @@
   background-color: #007399;
 }
 
-// Background logo styles for print and PDF modes
-@media print {
-  .background-logo {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    opacity: 0.1;
-    z-index: -1;
-    width: 70%;
-    max-width: 600px;
-    pointer-events: none;
+// Hide action buttons in print and PDF mode only
+@media print, screen and (class: is-pdf-mode) {
+  .btn-print,
+  .btn-save,
+  .btn-update,
+  .add-btn,
+  .delete-btn,
+  .background-logo,
+  .background-logo-second {
+    display: none !important;
   }
 }
 

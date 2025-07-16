@@ -31,7 +31,10 @@ export const itemsApi = {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(itemData),
+                body: JSON.stringify({
+                    ...itemData,
+                    quantity: itemData.quantity === undefined || itemData.quantity === null ? 0 : itemData.quantity
+                }),
             });
             if (!response.ok) {
                 const errorData = await response.json();
@@ -51,7 +54,10 @@ export const itemsApi = {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(itemData),
+                body: JSON.stringify({
+                    ...itemData,
+                    quantity: itemData.quantity === undefined || itemData.quantity === null ? 0 : itemData.quantity
+                }),
             });
             if (!response.ok) throw new Error('Failed to update item');
             return await response.json();

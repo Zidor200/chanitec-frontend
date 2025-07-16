@@ -30,7 +30,7 @@ import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberIn
 
 interface HistoryPageProps {
   currentPath: string;
-  onNavigate: (path: string) => void;
+  onNavigate: (path: string, quoteId?: string) => void;
 }
 
 const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) => {
@@ -194,7 +194,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
     }
   };
   const handleViewPriceOffer = (quoteId: string) => {
-    onNavigate(`/price-offer?id=${quoteId}`);
+    onNavigate('/price-offer', quoteId);
   };
   const handleReminderChange = (quoteId: string, value: number) => {
     setReminderDays(prev => ({ ...prev, [quoteId]: value }));

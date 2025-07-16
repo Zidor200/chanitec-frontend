@@ -84,11 +84,13 @@ interface ImportResults {
 interface ProcessedExcelItem {
   description: string;
   priceEuro: number;
+  quantity: number;
   rowIndex: number;
   isValid: boolean;
   validationError?: string;
   originalRow: {
     description: any;
+    quantity: any;
     price: any;
   };
 }
@@ -116,7 +118,8 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentItem, setCurrentItem] = useState<Partial<SupplyItem>>({
     description: '',
-    priceEuro: 0
+    priceEuro: 0,
+    quantity: 0
   });
 
   // State for loading and feedback
@@ -151,7 +154,8 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
       const transformedItems = data.map((item: any) => ({
         id: item.id,
         description: item.description,
-        priceEuro: item.price
+        priceEuro: item.price,
+        quantity: item.quantity
       }));
 
       setItems(transformedItems);
@@ -192,7 +196,8 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
   const handleAddItem = () => {
     setCurrentItem({
       description: '',
-      priceEuro: 0
+      priceEuro: 0,
+      quantity: 0
     });
     setIsEditing(false);
     setDialogOpen(true);
@@ -208,7 +213,7 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
     const { name, value } = e.target;
     setCurrentItem({
       ...currentItem,
-      [name]: name === 'priceEuro' ? parseFloat(value) : value
+      [name]: name === 'priceEuro' ? parseFloat(value) : name === 'quantity' ? (value === '' ? 0 : parseInt(value)) : value
     });
   };
 
@@ -223,7 +228,8 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
       setLoading(true);
       const itemData = {
         description: currentItem.description,
-        price: currentItem.priceEuro
+        price: currentItem.priceEuro,
+        quantity: currentItem.quantity === undefined || currentItem.quantity === null ? 0 : currentItem.quantity
       };
 
       if (isEditing && currentItem.id) {
@@ -236,7 +242,7 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
       handleCloseDialog();
       await loadItems();
     } catch (error) {
-      showSnackbar(`Erreur lors de ${isEditing ? 'la mise à jour' : 'la création'} de l\'article`, 'error');
+      showSnackbar(`Erreur lors de ${isEditing ? 'la mise à jour' : 'la création'} de l'article`, 'error');
     } finally {
       setLoading(false);
     }
@@ -294,7 +300,8 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
           // Prepare item data (same structure as handleSaveItem)
           const itemData = {
             description: item.description,
-            price: item.priceEuro
+            price: item.priceEuro,
+            quantity: 0 // Default quantity for import
           };
 
           // Create item using the same API call as handleSaveItem
@@ -371,13 +378,22 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
           const processedItems: ProcessedExcelItem[] = [];
           for (let i = 1; i < jsonData.length; i++) {
             const row = jsonData[i] as any[];
-            if (!row || row.length < 2) continue;
+            if (!row || row.length < 4) continue;
 
-            const description = String(row[0] || '').trim();
+            const description = String(row[1] || '').trim(); // Column B
             if (!description) continue;
 
+            let quantity = 0;
+            const quantityValue = row[2]; // Column C
+            if (typeof quantityValue === 'number') {
+              quantity = Math.max(0, Math.floor(quantityValue));
+            } else if (typeof quantityValue === 'string') {
+              const cleanQuantity = quantityValue.replace(/[^0-9]/g, '');
+              quantity = parseInt(cleanQuantity) || 0;
+            }
+
             let price = 0;
-            const priceValue = row[1];
+            const priceValue = row[3]; // Column D
             if (typeof priceValue === 'number') {
               price = priceValue;
             } else if (typeof priceValue === 'string') {
@@ -389,11 +405,13 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
             const processedItem: ProcessedExcelItem = {
               description,
               priceEuro: price,
+              quantity: quantity,
               rowIndex: i + 1,
               isValid: true,
               originalRow: {
-                description: row[0],
-                price: row[1]
+                description: row[1],
+                quantity: row[2],
+                price: row[3]
               }
             };
 
@@ -415,7 +433,8 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
                   },
                   body: JSON.stringify({
                     description: item.description,
-                    price: item.priceEuro
+                    price: item.priceEuro,
+                    quantity: item.quantity
                   })
                 });
 
@@ -527,19 +546,20 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
                 <TableRow>
                   <TableCell>Description</TableCell>
                   <TableCell align="right">Prix (€)</TableCell>
+                  <TableCell align="right">Quantité</TableCell>
                   <TableCell align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={4} align="center">
+                    <TableCell colSpan={5} align="center">
                       Chargement...
                     </TableCell>
                   </TableRow>
                 ) : filteredItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} align="center">
+                    <TableCell colSpan={5} align="center">
                       Aucun article trouvé
                     </TableCell>
                   </TableRow>
@@ -549,6 +569,9 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
                       <TableCell>{item.description}</TableCell>
                       <TableCell align="right">
                         {item.priceEuro ? Number(item.priceEuro).toFixed(2) : '0.00'}
+                      </TableCell>
+                      <TableCell align="right">
+                        {item.quantity !== undefined && item.quantity !== null ? item.quantity : 0}
                       </TableCell>
                       <TableCell align="center">
                         <IconButton
@@ -607,6 +630,16 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
             value={currentItem.priceEuro || 0}
             onChange={(value) => setCurrentItem({ ...currentItem, priceEuro: value })}
             step={0.01}
+            min={0}
+            fullWidth
+            margin="dense"
+            variant="outlined"
+          />
+          <CustomNumberInput
+            label="Quantité"
+            value={currentItem.quantity ?? 0}
+            onChange={(value) => setCurrentItem({ ...currentItem, quantity: value })}
+            step={1}
             min={0}
             fullWidth
             margin="dense"

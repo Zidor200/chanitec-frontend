@@ -16,6 +16,10 @@ import { PriceOffer } from '../../models/PriceOffer';
 import { priceOfferService } from '../../services/price-offer-service';
 import { apiService } from '../../services/api-service';
 import './PriceOfferPage.scss';
+import logo512 from '../../assets/logo512.png';
+import logoChanitec from '../../assets/logo chanitecc.png';
+import signatureAyachi from '../../assets/signature-ayachi.png';
+import signaturePerrache from '../../assets/signature-perrache.png.png';
 
 interface PriceOfferPageProps {
   currentPath: string;
@@ -31,10 +35,10 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
 
   useEffect(() => {
     const loadPriceOffer = async () => {
-      // Extract quoteId from URL parameters
+      // Try to get quoteId from URL, fallback to prop
       const urlParams = new URLSearchParams(window.location.search);
-      const quoteIdFromUrl = urlParams.get('id');
-      console.log('Quote ID from URL:', quoteIdFromUrl);
+      const quoteIdFromUrl = urlParams.get('id') || quoteId;
+      console.log('Quote ID from URL or prop:', quoteIdFromUrl);
 
       if (!quoteIdFromUrl) {
         setError('No quote ID provided');
@@ -98,7 +102,7 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
     };
 
     loadPriceOffer();
-  }, []); // Remove quoteId from dependencies since we're getting it from URL
+  }, [quoteId]); // Add quoteId to dependencies
 
   const handlePrint = () => {
     window.print();
@@ -165,8 +169,8 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
           <Paper className="price-offer-content" elevation={2}>
             {/* Header with logos */}
             <Box className="header" sx={{ marginBottom: 4 }}>
-              <img src="/logo512.png" alt="Logo" className="logo" />
-              <img src="/logo chanitecc.png" alt="Chanitec Logo" className="chanitec-logo" />
+              <img src={logo512} alt="Logo" className="logo" />
+              <img src={logoChanitec} alt="Chanitec Logo" className="chanitec-logo" />
             </Box>
 
             {/* Quote Information */}
@@ -292,14 +296,14 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
                 <Typography variant="subtitle2" fontWeight="bold">Bilel AYACHI</Typography>
                 <Typography variant="body2" fontWeight="bold">Responsable Dpt Climatisation et Froid</Typography>
                 <Box className="signature-placeholder" sx={{ minHeight: '60px', margin: '16px 0', display: 'block', textAlign: 'center' }}>
-                  <img src="/signature-ayachi.png" alt="Signature Bilel Ayachi" style={{ maxHeight: '60px', maxWidth: '100%', display: 'block', margin: '0 auto' }} />
+                  <img src={signatureAyachi} alt="Signature Bilel Ayachi" style={{ maxHeight: '60px', maxWidth: '100%', display: 'block', margin: '0 auto' }} />
                 </Box>
               </Box>
               <Box className="signature signature-right">
                 <Typography variant="subtitle2" fontWeight="bold">Amandine PERRACHE - MINESI</Typography>
                 <Typography variant="body2" fontWeight="bold">Directrice Commerciale</Typography>
                 <Box className="signature-placeholder" sx={{ minHeight: '60px', margin: '16px 0', display: 'block', textAlign: 'center' }}>
-                  <img src="/signature-perrache.png.png" alt="Signature Amandine Perrache" style={{ maxHeight: '60px', maxWidth: '100%', display: 'block', margin: '0 auto' }} />
+                  <img src={signaturePerrache} alt="Signature Amandine Perrache" style={{ maxHeight: '60px', maxWidth: '100%', display: 'block', margin: '0 auto' }} />
                 </Box>
               </Box>
             </Box>
