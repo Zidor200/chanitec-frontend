@@ -35,6 +35,7 @@ export interface Client {
   id: string;
   name: string;
   sites: Site[];
+  Taux_marge?: number; // Margin rate for the client
 }
 
 /**

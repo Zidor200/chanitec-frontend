@@ -52,6 +52,7 @@ import Layout from '../../components/Layout/Layout';
 import { Client, Site } from '../../models/Quote';
 import { apiService } from '../../services/api-service';
 import { generateClientId } from '../../utils/id-generator';
+import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberInput';
 import './ClientsPage.scss';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
@@ -73,7 +74,8 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
   const [isEditing, setIsEditing] = useState(false);
   const [currentClient, setCurrentClient] = useState<Partial<Client>>({
     name: '',
-    sites: []
+    sites: [],
+    Taux_marge: 0
   });
 
   // State for new site
@@ -130,7 +132,8 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
   const handleAddClient = () => {
     setCurrentClient({
       name: '',
-      sites: []
+      sites: [],
+      Taux_marge: 0
     });
     setNewSiteName('');
     setNewSiteAddress('');
@@ -226,7 +229,8 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: currentClient.name.trim()
+          name: currentClient.name.trim(),
+          Taux_marge: currentClient.Taux_marge || 0
         })
       });
 
@@ -283,7 +287,10 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
       const clientUpdateResponse = await fetch(`${API_BASE_URL}/clients/${currentClient.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: currentClient.name.trim() })
+        body: JSON.stringify({
+          name: currentClient.name.trim(),
+          Taux_marge: currentClient.Taux_marge || 0
+        })
       });
 
       if (!clientUpdateResponse.ok) {
@@ -330,7 +337,8 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
     setDialogOpen(false);
     setCurrentClient({
       name: '',
-      sites: []
+      sites: [],
+      Taux_marge: 0
     });
     setNewSiteName('');
     setIsEditing(false);
@@ -566,6 +574,16 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
             fullWidth
             value={currentClient.name}
             onChange={(e) => setCurrentClient({ ...currentClient, name: e.target.value })}
+          />
+          <CustomNumberInput
+            label="Taux de Marge"
+            value={currentClient.Taux_marge || 0}
+            onChange={(value) => setCurrentClient({ ...currentClient, Taux_marge: value })}
+            step={0.01}
+            min={0}
+            fullWidth
+            margin="dense"
+            variant="outlined"
           />
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
             <TextField

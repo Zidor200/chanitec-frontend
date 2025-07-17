@@ -468,7 +468,6 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
         {/* Action Buttons */}
         {!isPdfMode && (
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, margin: '30px 0' }}>
-            <button className="btn-print" onClick={handleGeneratePDF}>Telecharger PDF</button>
             <button className="btn-save" onClick={handlePrint}> {'Imprimer'}</button>
           </div>
         )}

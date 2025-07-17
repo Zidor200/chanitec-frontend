@@ -4,6 +4,7 @@ import { Client, Site } from '../../models/Quote';
 import { apiService } from '../../services/api-service';
 import { extractVersion } from '../../utils/id-generator';
 import './QuoteHeader.scss';
+import CustomNumberInput from '../CustomNumberInput/CustomNumberInput';
 
 interface QuoteHeaderProps {
   quoteId: string;
@@ -15,6 +16,7 @@ interface QuoteHeaderProps {
   onSiteChange: (value: string) => void;
   onObjectChange: (value: string) => void;
   onDateChange: (value: string) => void;
+  onClientMarginChange?: (margin: number) => void;
 }
 
 const QuoteHeader: React.FC<QuoteHeaderProps> = ({
@@ -26,7 +28,8 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
   onClientChange,
   onSiteChange,
   onObjectChange,
-  onDateChange
+  onDateChange,
+  onClientMarginChange
 }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
@@ -34,6 +37,7 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
   const [isSitesLoading, setIsSitesLoading] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [siteError, setSiteError] = useState<string | null>(null);
+  const [clientMargin, setClientMargin] = useState<number | null>(null);
 
   // Format quoteId to display version information
   const formatQuoteId = (id: string) => {
@@ -134,19 +138,32 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
     loadSitesForClient();
   }, [clientName, clients]);
 
+  useEffect(() => {
+    const selectedClient = clients.find(c => c.name === clientName);
+    if (selectedClient && typeof selectedClient.Taux_marge === 'number') {
+      setClientMargin(selectedClient.Taux_marge);
+      if (onClientMarginChange) onClientMarginChange(selectedClient.Taux_marge);
+      console.debug(`$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ taux de marge de client ${selectedClient.name}:`, selectedClient.Taux_marge);
+    }
+  }, [clientName, clients, onClientMarginChange]);
+
+
   // Handle client selection change - with safeguards for debugging
   const handleClientChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       const value = event.target.value;
-      console.log('Client selection changed to:', value);
-
-      // Directly update the client name via parent component
+      // Find the selected client
+      const selectedClient = clients.find(c => c.name === value);
+      // Call the parent to update the client name
       onClientChange(value);
-
+      // If the client has a Taux_marge, update local state and call margin change handler
+      if (selectedClient && typeof selectedClient.Taux_marge === 'number') {
+        setClientMargin(selectedClient.Taux_marge);
+        if (onClientMarginChange) onClientMarginChange(selectedClient.Taux_marge);
+        console.debug(`$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ taux de marge de client ${selectedClient.name}:`, selectedClient.Taux_marge);
+      }
       // Clear site when client changes
       onSiteChange('');
-
-      console.log('Client selection handler completed successfully');
     } catch (error) {
       console.error('Error in client selection handler:', error);
     }
@@ -190,6 +207,7 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
           </TextField>
           {isLoading && <Typography variant="caption" color="text.secondary">Chargement des clients...</Typography>}
         </Box>
+
 
         <Box sx={{ flex: '1 1 220px', position: 'relative' }}>
           <TextField

@@ -16,6 +16,7 @@ ENDPOINTS = {
     "Create Client":       {"method": "POST",   "path": "/clients"},
     "Update Client":       {"method": "PUT",    "path": "/clients/{id}"},
     "Delete Client":       {"method": "DELETE", "path": "/clients/{id}"},
+    # NOTE: As of latest backend update, 'Create Client' and 'Update Client' accept 'name' (required) and 'Taux_change' (optional decimal) fields in the request body.
 
     # Sites
     "List Sites":          {"method": "GET",    "path": "/sites"},

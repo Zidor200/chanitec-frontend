@@ -244,9 +244,7 @@
   .btn-save,
   .btn-update,
   .add-btn,
-  .delete-btn,
-  .background-logo,
-  .background-logo-second {
+  .delete-btn {
     display: none !important;
   }
 }
@@ -261,27 +259,30 @@
 @media print, screen and (class: is-pdf-mode) {
   .background-logo {
     display: block;
-    position: fixed;
-    top: 50%;
+    position: absolute;
+    top: 40%;
     left: 50%;
     transform: translate(-50%, -50%);
     opacity: 0.1;
-    z-index: -1;
+    z-index: 1000;
     width: 90%;
     max-width: 600px;
     pointer-events: none;
   }
   .background-logo-second {
     display: block;
-    position: fixed;
-    top: 90%;
+    position: absolute;
+    top: 75%;
     left: 50%;
     transform: translate(-50%, -50%);
     opacity: 0.1;
-    z-index: -1;
+    z-index: 1000;
     width: 60%;
     max-width: 400px;
     pointer-events: none;
+  }
+  body, .main-content, .quote-test-root, #root {
+    background: transparent !important;
   }
 }
 

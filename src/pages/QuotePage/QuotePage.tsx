@@ -185,6 +185,10 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
           onSiteChange={(value) => setQuoteField('siteName', value)}
           onObjectChange={(value) => setQuoteField('object', value)}
           onDateChange={(value) => setQuoteField('date', value)}
+          onClientMarginChange={(margin) => {
+            setQuoteField('supplyMarginRate', margin);
+            setQuoteField('laborMarginRate', margin);
+          }}
         />
 
         <SuppliesSection
