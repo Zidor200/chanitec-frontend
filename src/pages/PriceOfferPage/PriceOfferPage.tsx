@@ -5,7 +5,11 @@ import {
   Typography,
   Paper,
   Divider,
-  Button
+  Button,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel
 } from '@mui/material';
 import { PrintOutlined, Download } from '@mui/icons-material';
 import { format } from 'date-fns';
@@ -32,6 +36,7 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
   const [numberToDisplay, setNumberToDisplay] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const [signatureOption, setSignatureOption] = useState<'single' | 'double' | 'none'>('double');
 
   useEffect(() => {
     const loadPriceOffer = async () => {
@@ -296,17 +301,25 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
                 <Typography variant="subtitle2" fontWeight="bold">Bilel AYACHI</Typography>
                 <Typography variant="body2" fontWeight="bold">Responsable Dpt Climatisation et Froid</Typography>
                 <Box className="signature-placeholder" sx={{ minHeight: '60px', margin: '16px 0', display: 'block', textAlign: 'center' }}>
-                  <img src={signatureAyachi} alt="Signature Bilel Ayachi" style={{ maxHeight: '60px', maxWidth: '100%', display: 'block', margin: '0 auto' }} />
+                  {(signatureOption === 'double' || signatureOption === 'single') && (
+                    <img src={signatureAyachi} alt="Signature Bilel Ayachi" style={{ maxHeight: '60px', maxWidth: '100%', display: 'block', margin: '0 auto' }} />
+                  )}
                 </Box>
               </Box>
-              <Box className="signature signature-right">
+              <Box className="signature signature-right" sx={{ textAlign: 'left' }}>
                 <Typography variant="subtitle2" fontWeight="bold">Amandine PERRACHE - MINESI</Typography>
                 <Typography variant="body2" fontWeight="bold">Directrice Commerciale</Typography>
-                <Box className="signature-placeholder" sx={{ minHeight: '60px', margin: '16px 0', display: 'block', textAlign: 'center' }}>
-                  <img src={signaturePerrache} alt="Signature Amandine Perrache" style={{ maxHeight: '60px', maxWidth: '100%', display: 'block', margin: '0 auto' }} />
+                <Box className="signature-placeholder" sx={{ minHeight: '60px', margin: '16px 0', display: 'flex', alignItems: 'center', textAlign: 'center' }}>
+                  {signatureOption === 'double' && (
+                    <>
+                      <img src={signatureAyachi} alt="Signature Bilel Ayachi" style={{ maxHeight: '60px', maxWidth: '100%', display: 'inline-block', margin: '0 auto' }} />
+                      <span style={{ marginLeft: '0.1rem', fontWeight: 'bold', fontSize: '1.1em' }}>P/I</span>
+                    </>
+                  )}
                 </Box>
               </Box>
             </Box>
+            {/* No signature if 'none' is selected */}
             <Box className="price-offer-note" sx={{ textAlign: 'center', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
               NB: Votre commande implique l’acceptation de nos conditions générales de vente consultables sur notre site web www.chanic.com
             </Box>
@@ -317,23 +330,29 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
             </Box>
           </Paper>
         </div>
-        <Box className="actions-bar" sx={{ mb: 2 }}>
+        <Box className="actions-bar" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
           <Button
             variant="contained"
             startIcon={<PrintOutlined />}
             onClick={handlePrint}
-            sx={{ mr: 1 }}
+            sx={{ mr: 2 }}
           >
             Imprimer
           </Button>
-          <Button
-            variant="contained"
-            startIcon={<Download />}
-            onClick={handleDownloadPDF}
-            sx={{ mr: 1 }}
-          >
-            Télécharger PDF
-          </Button>
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel id="signature-select-label">Signatures</InputLabel>
+            <Select
+              labelId="signature-select-label"
+              id="signature-select"
+              value={signatureOption}
+              label="Signatures"
+              onChange={e => setSignatureOption(e.target.value as 'single' | 'double' | 'none')}
+            >
+              <MenuItem value="single">Signature</MenuItem>
+              <MenuItem value="double">Double signature</MenuItem>
+              <MenuItem value="none">No signature</MenuItem>
+            </Select>
+          </FormControl>
         </Box>
       </Container>
     </Layout>

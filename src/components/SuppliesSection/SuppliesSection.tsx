@@ -280,22 +280,24 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
         <Box className="rates-container-item" sx={{ flex: '1 1 50px' }}>
           <CustomNumberInput
             value={exchangeRate}
-            onChange={onUpdateExchangeRate}
             label="Taux de change"
             min={0}
             step={0.01}
             fullWidth
+            displayOnly={true}
+            onChange={() => {}}
           />
         </Box>
         <Box className="rates-container-item" sx={{ flex: '1 1 50px' }}>
           <CustomNumberInput
             value={marginRate}
-            onChange={onUpdateMarginRate}
             label="Taux de marge"
             min={0}
             max={1}
             step={0.01}
             fullWidth
+            displayOnly={true}
+            onChange={() => {}}
           />
         </Box>
       </Box>

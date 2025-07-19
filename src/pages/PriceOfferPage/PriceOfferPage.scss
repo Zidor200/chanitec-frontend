@@ -208,7 +208,9 @@
         width: 10%;
       }
       .signature-right {
-        align-items: flex-end;
+        align-items: flex-start;
+        text-align: left;
+        margin-left: 20%;
       }
       .signature-line {
         margin-top: 1.5rem;
@@ -220,6 +222,7 @@
     .signatures-row.updated-signatures {
       margin-top: 2rem;
       margin-bottom: 1rem;
+      gap: 3rem;
       .signature {
         width: 45%;
       }

@@ -125,19 +125,21 @@ const LaborSection: React.FC<LaborSectionProps> = ({
           <CustomNumberInput
             label="Taux de change"
             value={exchangeRate}
-            onChange={onUpdateExchangeRate}
             min={0}
             step={0.01}
+            displayOnly={true}
+            onChange={() => {}}
           />
         </Box>
         <Box className="rates-container-item" sx={{ flex: '1 1 50px' , width: '50%' }}>
           <CustomNumberInput
             label="Taux de marge"
             value={marginRate}
-            onChange={onUpdateMarginRate}
             min={0}
             max={1}
             step={0.01}
+            displayOnly={true}
+            onChange={() => {}}
           />
         </Box>
       </Box>

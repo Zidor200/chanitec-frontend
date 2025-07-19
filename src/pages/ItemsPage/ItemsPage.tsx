@@ -25,7 +25,8 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
-  FileUpload as FileUploadIcon
+  FileUpload as FileUploadIcon,
+  WarningAmber as WarningAmberIcon
 } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import Layout from '../../components/Layout/Layout';
@@ -566,7 +567,14 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
                 ) : (
                   filteredItems.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell>{item.description}</TableCell>
+                      <TableCell>
+                        {item.description}
+                        {item.quantity === 0 && (
+                          <Tooltip title="Quantité nulle : veuillez réapprovisionner" placement="right">
+                            <WarningAmberIcon style={{ color: '#FFA000', marginLeft: 8, verticalAlign: 'middle' }} fontSize="small" />
+                          </Tooltip>
+                        )}
+                      </TableCell>
                       <TableCell align="right">
                         {item.priceEuro ? Number(item.priceEuro).toFixed(2) : '0.00'}
                       </TableCell>

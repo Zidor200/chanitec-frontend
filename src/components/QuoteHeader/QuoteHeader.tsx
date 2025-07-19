@@ -139,14 +139,19 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
   }, [clientName, clients]);
 
   useEffect(() => {
-    const selectedClient = clients.find(c => c.name === clientName);
-    if (selectedClient && typeof selectedClient.Taux_marge === 'number') {
-      setClientMargin(selectedClient.Taux_marge);
-      if (onClientMarginChange) onClientMarginChange(selectedClient.Taux_marge);
-      console.debug(`$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ taux de marge de client ${selectedClient.name}:`, selectedClient.Taux_marge);
+    if (!clientName || clients.length === 0) return;
+    // Use case-insensitive, trimmed match for robustness
+    const selectedClient = clients.find(
+      c => c.name.trim().toLowerCase() === clientName.trim().toLowerCase()
+    );
+    if (selectedClient && selectedClient.Taux_marge != null) {
+      const margin = Number(selectedClient.Taux_marge);
+      if (!isNaN(margin)) {
+        setClientMargin(margin);
+        if (onClientMarginChange) onClientMarginChange(margin);
+      }
     }
   }, [clientName, clients, onClientMarginChange]);
-
 
   // Handle client selection change - with safeguards for debugging
   const handleClientChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,10 +162,12 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
       // Call the parent to update the client name
       onClientChange(value);
       // If the client has a Taux_marge, update local state and call margin change handler
-      if (selectedClient && typeof selectedClient.Taux_marge === 'number') {
-        setClientMargin(selectedClient.Taux_marge);
-        if (onClientMarginChange) onClientMarginChange(selectedClient.Taux_marge);
-        console.debug(`$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ taux de marge de client ${selectedClient.name}:`, selectedClient.Taux_marge);
+      if (selectedClient && selectedClient.Taux_marge != null) {
+        const margin = Number(selectedClient.Taux_marge);
+        if (!isNaN(margin)) {
+          setClientMargin(margin);
+          if (onClientMarginChange) onClientMarginChange(margin);
+        }
       }
       // Clear site when client changes
       onSiteChange('');

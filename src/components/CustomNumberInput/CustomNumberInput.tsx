@@ -14,6 +14,7 @@ interface CustomNumberInputProps {
   disabled?: boolean;
   variant?: 'outlined' | 'filled' | 'standard';
   margin?: 'none' | 'dense' | 'normal';
+  displayOnly?: boolean; // New prop
 }
 
 const CustomNumberInput: React.FC<CustomNumberInputProps> = ({
@@ -26,8 +27,18 @@ const CustomNumberInput: React.FC<CustomNumberInputProps> = ({
   fullWidth = false,
   disabled = false,
   variant = 'outlined',
-  margin = 'dense'
+  margin = 'dense',
+  displayOnly = false // New prop
 }) => {
+  if (displayOnly) {
+    return (
+      <Box className="custom-number-input display-only" sx={{ display: 'flex', flexDirection: 'column', width: fullWidth ? '100%' : 'auto' }}>
+        {label && <span className="custom-number-label" style={{ fontWeight: 500, marginBottom: 2 }}>{label}</span>}
+        <span className="custom-number-value" style={{ padding: '8.5px 14px', background: '#f5f5f5', borderRadius: 4, color: '#888', minHeight: 38 }}>{value}</span>
+      </Box>
+    );
+  }
+
   const handleIncrease = () => {
     if (max === undefined || value < max) {
       onChange(value + step);

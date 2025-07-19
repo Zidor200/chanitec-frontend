@@ -180,10 +180,21 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
   // Handlers for quote card actions
   const handleLoadQuote = (quoteId: string) => {
     const quote = quotes.find(q => q.id === quoteId);
-    if (quote && quote.confirmed) {
-      onNavigate(`/quote?id=${quoteId}`);
-    } else {
-      onNavigate(`/quote?id=${quoteId}&showConfirm=true`);
+    if (quote) {
+      if (quote.reminderDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const reminder = new Date(quote.reminderDate);
+        reminder.setHours(0, 0, 0, 0);
+        if (reminder < today) {
+          alert("Attention : la date de rappel de ce devis est dépassée !");
+        }
+      }
+      if (quote.confirmed) {
+        onNavigate(`/quote?id=${quoteId}`);
+      } else {
+        onNavigate(`/quote?id=${quoteId}&showConfirm=true`);
+      }
     }
   };
   const handleDeleteQuote = async (quoteId: string) => {
@@ -376,29 +387,35 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                           </Typography>
                         </Box>
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2, borderTop: '1px solid rgba(0, 0, 0, 0.12)', paddingTop: 2 }}>
-                        <CustomNumberInput
-                          label="Jours de rappel"
-                          value={reminderDays[quote.id] || 0}
-                          onChange={value => handleReminderChange(quote.id, value)}
-                          min={0}
-                          fullWidth={false}
-                        />
-                        <IconButton color="primary" sx={{ ml: 1 }} onClick={() => handleSetReminder(quote.id)}>
-                          <AddAlarmIcon />
-                        </IconButton>
-                      </Box>
+                      {isLatest && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2, borderTop: '1px solid rgba(0, 0, 0, 0.12)', paddingTop: 2 }}>
+                          <CustomNumberInput
+                            label="Jours de rappel"
+                            value={reminderDays[quote.id] || 0}
+                            onChange={value => handleReminderChange(quote.id, value)}
+                            min={0}
+                            fullWidth={false}
+                          />
+                          <IconButton color="primary" sx={{ ml: 1 }} onClick={() => handleSetReminder(quote.id)}>
+                            <AddAlarmIcon />
+                          </IconButton>
+                        </Box>
+                      )}
                     </Box>
                     <Box className="card-actions">
                       <Button className="action-button view" size="small" startIcon={<VisibilityIcon />} onClick={() => handleLoadQuote(quote.id)}>
                         Voir
                       </Button>
-                      <Button className="action-button" size="small" color="primary" startIcon={<ReceiptLongOutlined />} onClick={() => handleViewPriceOffer(quote.id)}>
-                        Voir l'offre de prix
-                      </Button>
-                      <Button className="action-button delete" size="small" color="error" startIcon={<DeleteIcon />} onClick={() => handleDeleteQuote(quote.id)}>
-                        Supprimer
-                      </Button>
+                      {isLatest && (
+                        <>
+                          <Button className="action-button" size="small" color="primary" startIcon={<ReceiptLongOutlined />} onClick={() => handleViewPriceOffer(quote.id)}>
+                            Voir l'offre de prix
+                          </Button>
+                          <Button className="action-button delete" size="small" color="error" startIcon={<DeleteIcon />} onClick={() => handleDeleteQuote(quote.id)}>
+                            Supprimer
+                          </Button>
+                        </>
+                      )}
                     </Box>
                   </Card>
                 );
