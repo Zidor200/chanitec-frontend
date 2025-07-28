@@ -73,6 +73,14 @@ ENDPOINTS = {
     "Update Employee":      {"method": "PUT",    "path": "/employees/{id}"},
     "Delete Employee":      {"method": "DELETE", "path": "/employees/{id}"},
 
+    # Splits
+    "List Splits":         {"method": "GET",    "path": "/splits"},
+    "Get Split":           {"method": "GET",    "path": "/splits/{code}"},
+    "Create Split":        {"method": "POST",   "path": "/splits"},
+    "Update Split":        {"method": "PUT",    "path": "/splits/{code}"},
+    "Delete Split":        {"method": "DELETE", "path": "/splits/{code}"},
+    "Get Site For Split":  {"method": "GET",    "path": "/splits/{code}/site"},
+
     # Debug
     "Get Database Structure": {"method": "GET", "path": "/debug/database-structure"},
     "Test Site Lookup":       {"method": "GET", "path": "/debug/test-site-lookup/{clientId}"}

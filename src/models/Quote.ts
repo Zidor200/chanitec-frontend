@@ -38,6 +38,13 @@ export interface Client {
   Taux_marge?: number; // Margin rate for the client
 }
 
+export interface Split {
+  Code:string
+  name: string;
+  description: string;
+  puissance: number;
+  site:string
+}
 /**
  * Represents a site belonging to a client
  */
@@ -45,6 +52,7 @@ export interface Site {
   id: string;
   name: string;
   client_id: string;
+  splits?: Split[];
 }
 
 /**

@@ -49,7 +49,7 @@ import {
   MoreVert as MoreVertIcon
 } from '@mui/icons-material';
 import Layout from '../../components/Layout/Layout';
-import { Client, Site } from '../../models/Quote';
+import { Client, Site, Split } from '../../models/Quote'; // <-- Import Split here
 import { apiService } from '../../services/api-service';
 import { generateClientId } from '../../utils/id-generator';
 import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberInput';
@@ -61,6 +61,7 @@ interface ClientsPageProps {
   currentPath: string;
   onNavigate: (path: string) => void;
 }
+
 
 const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) => {
   // State for clients data
@@ -93,6 +94,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
 
   const [originalClientSites, setOriginalClientSites] = useState<Site[]>([]); // Store original sites when editing
+  const [deletedSplits, setDeletedSplits] = useState<string[]>([]); // Track split codes to delete
 
   // Load clients on component mount
   useEffect(() => {
@@ -114,7 +116,17 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
         clientsData.map(async (client: { id: string; name: string }) => {
           const sitesResponse = await fetch(`${API_BASE_URL}/sites/by-client?clientId=${client.id}`);
           const sites = sitesResponse.ok ? await sitesResponse.json() : [];
-          return { ...client, sites };
+
+          // Fetch splits for each site
+          const sitesWithSplits = await Promise.all(
+            sites.map(async (site: Site) => {
+              const splitsResponse = await fetch(`${API_BASE_URL}/splits/by-site/${site.id}`);
+              const splits = splitsResponse.ok ? await splitsResponse.json() : [];
+              return { ...site, splits };
+            })
+          );
+
+          return { ...client, sites: sitesWithSplits };
         })
       );
 
@@ -148,35 +160,18 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
       return;
     }
 
-    if (isEditing) {
-      // If editing, just add locally to the state for now
-      const tempSite: Site = {
-        id: `temp-${Date.now()}`, // Temporary ID for local state
-        name: newSiteName.trim(),
-        client_id: currentClient.id || '' // Ensure client_id is present
-      };
-      setCurrentClient(prev => ({
-        ...prev,
-        sites: [...(prev.sites || []), tempSite]
-      }));
-      setNewSiteName(''); // Clear input
-    } else {
-      // If creating a new client, this button shouldn't call the API directly.
-      // The main save button handles site creation after client creation.
-      // For consistency, let's also update the local state here.
-       const tempSite: Site = {
-        id: `temp-${Date.now()}`, // Temporary ID for local state
-        name: newSiteName.trim(),
-        client_id: '' // Will be set upon client creation
-      };
-       setCurrentClient(prev => ({
-        ...prev,
-        sites: [...(prev.sites || []), tempSite]
-      }));
-      setNewSiteName(''); // Clear input
-      // We might show a message that the site will be created with the client.
-      // showSnackbar('Site sera ajouté lors de la création du client', 'info');
-    }
+    const tempSite: Site = {
+      id: `temp-${Date.now()}`, // Temporary ID for local state
+      name: newSiteName.trim(),
+      client_id: currentClient.id || '', // Ensure client_id is present
+      splits: [] // <-- Initialize splits
+    };
+
+    setCurrentClient(prev => ({
+      ...prev,
+      sites: [...(prev.sites || []), tempSite]
+    }));
+    setNewSiteName(''); // Clear input
   };
 
   // Remove a site (locally during editing)
@@ -257,6 +252,25 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
         throw new Error('Failed to create site');
       }
 
+      // After site creation:
+      const newSite = await siteResponse.json();
+
+      // Create splits for this site
+      const splits = (currentClient.sites?.[0]?.splits ?? []);
+      await Promise.all(splits.map(split =>
+        fetch(`${API_BASE_URL}/splits`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: split.Code,
+            name: split.name,
+            description: split.description,
+            puissance: split.puissance,
+            site_id: newSite.id // <-- use site_id, not site
+          })
+        })
+      ));
+
       showSnackbar('Client et site créés avec succès', 'success');
       handleCloseDialog();
       await loadClients();
@@ -303,14 +317,55 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
 
       const sitesToAdd = currentSites.filter(cs => !originalSites.some(os => os.id === cs.id));
       const sitesToDelete = originalSites.filter(os => !currentSites.some(cs => cs.id === os.id));
+      const sitesToUpdate = currentSites.filter(cs => originalSites.some(os => os.id === cs.id));
 
       // Add new sites
-      await Promise.all(sitesToAdd.map(site =>
+      const addedSitesResponses = await Promise.all(sitesToAdd.map(site =>
         fetch(`${API_BASE_URL}/sites`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: site.name, client_id: currentClient.id })
         })
+      ));
+
+      // Get new site IDs for splits
+      const addedSites = await Promise.all(addedSitesResponses.map(async (res, idx) => {
+        if (!res.ok) throw new Error('Failed to add site');
+        return await res.json();
+      }));
+
+      // Create splits for newly added sites
+      await Promise.all(addedSites.map((site, idx) =>
+        Promise.all((sitesToAdd[idx].splits ?? []).map(split =>
+          fetch(`${API_BASE_URL}/splits`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              code: split.Code,
+              name: split.name,
+              description: split.description,
+              puissance: split.puissance,
+              site_id: site.id
+            })
+          })
+        ))
+      ));
+
+      // Always use POST for splits of updated sites
+      await Promise.all(sitesToUpdate.map(site =>
+        Promise.all((site.splits ?? []).map(split =>
+          fetch(`${API_BASE_URL}/splits`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              code: split.Code,
+              name: split.name,
+              description: split.description,
+              puissance: split.puissance,
+              site_id: site.id
+            })
+          })
+        ))
       ));
 
       // Delete removed sites
@@ -320,9 +375,17 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
         })
       ));
 
+      // Delete removed splits
+      await Promise.all(deletedSplits.map(code =>
+        fetch(`${API_BASE_URL}/splits/${code}`, {
+          method: 'DELETE'
+        })
+      ));
+
       showSnackbar('Client mis à jour avec succès', 'success');
       handleCloseDialog();
       await loadClients();
+      setDeletedSplits([]); // Reset after update
 
     } catch (error) {
       console.error('Error updating client and sites:', error);
@@ -501,36 +564,47 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
                         </Typography>
                       </Box>
                       {client.sites?.map((site) => (
-                        <Box
-                          key={site.id}
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            p: 1,
-                            borderRadius: 1,
-                            '&:hover': { bgcolor: '#f5f5f5' }
-                          }}
-                        >
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <PlaceIcon fontSize="small" color="action" />
-                            <Typography>{site.name}</Typography>
+                        <React.Fragment key={site.id}>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              p: 1,
+                              borderRadius: 1,
+                              '&:hover': { bgcolor: '#f5f5f5' }
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <PlaceIcon fontSize="small" color="action" />
+                              <Typography>{site.name}</Typography>
+                            </Box>
                           </Box>
-                          <Box>
-                            <IconButton size="small">
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton size="small" color="error">
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </Box>
+                          {/* Splits rendering must be inside the map block */}
+                          {site.splits && site.splits.length > 0 && (
+                            <Box sx={{ pl: 5, pb: 1 }}>
+                              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                                Splits:
+                              </Typography>
+                              <List dense>
+                                {site.splits.map((split, splitIdx) => (
+                                  <ListItem key={splitIdx} sx={{ pl: 0 }}>
+                                    <ListItemText
+                                      primary={`${split.Code || '-'} : ${split.name || '-'} ${split.puissance ?? '-'} btu/Kw`}
+                                      secondary={split.description}
+                                    />
+                                  </ListItem>
+                                ))}
+                              </List>
+                            </Box>
+                          )}
+                        </React.Fragment>
                       ))}
                     </Box>
                   </Collapse>
                 </Paper>
               ))
-            )}
+           ) }
           </Box>
         </Paper>
       </Container>
@@ -602,20 +676,122 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
             </Button>
           </Box>
           <List>
-            {currentClient.sites?.map((site) => (
-              <ListItem
-                key={site.id} // Use site.id as key
-                secondaryAction={
-                  <IconButton
-                    edge="end"
-                    onClick={() => handleRemoveSite(site.id)} // Calls the updated function
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                }
-              >
-                <ListItemText primary={site.name} />
-              </ListItem>
+            {currentClient.sites?.map((site, siteIdx) => (
+              <Box key={site.id} sx={{ mb: 2, border: '1px solid #eee', borderRadius: 1, p: 1 }}>
+                <ListItem
+                  secondaryAction={
+                    <IconButton edge="end" onClick={() => handleRemoveSite(site.id)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  }
+                >
+                  <ListItemText primary={site.name} />
+                </ListItem>
+                {/* Splits for this site */}
+                <Typography variant="subtitle2" sx={{ mt: 1 }}>Splits</Typography>
+                {(site.splits ?? []).map((split, splitIdx) => (
+                  <Box key={splitIdx} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
+                    <TextField
+                      label="Code split"
+                      size="small"
+                      value={split.Code}
+                      onChange={e => {
+                        const newSites = (currentClient.sites || []).map((s, idx) =>
+                          idx === siteIdx
+                            ? {
+                                ...s,
+                                splits: (s.splits ?? []).map((sp, spIdx) =>
+                                  spIdx === splitIdx ? { ...sp, Code: e.target.value } : sp
+                                )
+                              }
+                            : s
+                        );
+                        setCurrentClient({ ...currentClient, sites: newSites });
+                      }}
+                    />
+                    <TextField
+                      label="Nom du split"
+                      size="small"
+                      value={split.name}
+                      onChange={e => {
+                        const newSites = (currentClient.sites || []).map((s, idx) =>
+                          idx === siteIdx
+                            ? {
+                                ...s,
+                                splits: (s.splits ?? []).map((sp, spIdx) =>
+                                  spIdx === splitIdx ? { ...sp, name: e.target.value } : sp
+                                )
+                              }
+                            : s
+                        );
+                        setCurrentClient({ ...currentClient, sites: newSites });
+                      }}
+                    />
+                    <TextField
+                      label="Puissance"
+                      size="small"
+                      type="number"
+                      value={split.puissance}
+                      onChange={e => {
+                        const newSites = (currentClient.sites || []).map((s, idx) =>
+                          idx === siteIdx
+                            ? {
+                                ...s,
+                                splits: (s.splits ?? []).map((sp, spIdx) =>
+                                  spIdx === splitIdx ? { ...sp, puissance: Number(e.target.value) } : sp
+                                )
+                              }
+                            : s
+                        );
+                        setCurrentClient({ ...currentClient, sites: newSites });
+                      }}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        // If split has a Code, mark for deletion
+                        if (split.Code) {
+                          setDeletedSplits(prev => [...prev, split.Code]);
+                        }
+                        const newSites = (currentClient.sites || []).map((s, idx) =>
+                          idx === siteIdx
+                            ? {
+                                ...s,
+                                splits: (s.splits ?? []).filter((_, spIdx) => spIdx !== splitIdx)
+                              }
+                            : s
+                        );
+                        setCurrentClient({ ...currentClient, sites: newSites });
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                ))}
+                {/* Add Split Button */}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  sx={{ mt: 1 }}
+                  onClick={() => {
+                    const newSplit: Split = {
+                      Code: '',           // or generate a code if needed
+                      name: '',
+                      description: '',
+                      puissance: 0,
+                      site: site.id       // associate with the current site
+                    };
+                    const newSites = (currentClient.sites || []).map((s, idx) =>
+                      idx === siteIdx
+                        ? { ...s, splits: [...(s.splits ?? []), newSplit] }
+                        : s
+                    );
+                    setCurrentClient({ ...currentClient, sites: newSites });
+                  }}
+                >
+                  Ajouter un split
+                </Button>
+              </Box>
             ))}
           </List>
         </DialogContent>
