@@ -1,21 +1,80 @@
 .custom-number-input {
-  .MuiTextField-root {
-    width: 12rem;
+  .custom-number-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.87);
+    margin-bottom: 4px;
+  }
 
-    .MuiInputBase-root {
-      padding-left: 0;
-      padding-right: 0;
+  .custom-number-container {
+    display: flex;
+    align-items: center;
+    width: 12rem;
+    border: 1px solid rgba(0, 0, 0, 0.23);
+    border-radius: 4px;
+    background-color: #fff;
+    transition: border-color 0.2s ease;
+
+    &:hover {
+      border-color: rgba(0, 0, 0, 0.87);
     }
 
-    input[type="number"] {
-      -moz-appearance: textfield;
+    &:focus-within {
+      border-color: #1976d2;
+      border-width: 2px;
+    }
+
+    .custom-number-field {
+      flex: 1;
+      border: none;
+      outline: none;
+      padding: 8px 12px;
       text-align: center;
-      padding: 8px 40px !important;
+      font-size: 1rem;
+      background: transparent;
+      -moz-appearance: textfield;
 
       &::-webkit-inner-spin-button,
       &::-webkit-outer-spin-button {
         -webkit-appearance: none;
         margin: 0;
+      }
+
+      &:disabled {
+        background-color: rgba(0, 0, 0, 0.12);
+        color: rgba(0, 0, 0, 0.38);
+        cursor: not-allowed;
+      }
+
+      &.outlined {
+        // Default styling (already applied above)
+      }
+
+      &.filled {
+        background-color: rgba(0, 0, 0, 0.04);
+      }
+
+      &.standard {
+        border: none;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.23);
+        border-radius: 0;
+
+        &:focus {
+          border-bottom-color: #1976d2;
+          border-bottom-width: 2px;
+        }
+      }
+
+      &.dense {
+        padding: 6px 12px;
+      }
+
+      &.normal {
+        padding: 10px 12px;
+      }
+
+      &.none {
+        padding: 8px 12px;
       }
     }
 
@@ -26,6 +85,7 @@
       padding: 0;
       border-radius: 0;
       color: #666;
+      background: transparent;
 
       &.decrease-button {
         margin-left: 2px;
@@ -51,6 +111,19 @@
       svg {
         font-size: 18px;
       }
+    }
+  }
+
+  &.display-only {
+    .custom-number-value {
+      padding: 8.5px 14px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      color: #888;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
   }
 }

@@ -58,15 +58,22 @@ const QuoteActions: React.FC<QuoteActionsProps> = ({
 
   // Handle save action
   const handleSave = async () => {
+    // Validate that client and site are selected
+    if (!clientName || !siteName || clientName.trim() === '' || siteName.trim() === '') {
+      alert('Veuillez sélectionner un client et un site avant d\'enregistrer le devis.');
+      setSnackbarMessage('Veuillez sélectionner un client et un site avant d\'enregistrer le devis.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+
     try {
       const success = await onSave();
 
       if (success) {
         setSnackbarMessage('Devis enregistré avec succès! Prêt pour un nouveau devis.');
         setSnackbarSeverity('success');
-        window.location.href = '/quote';
-        clearQuote();
-        createNewQuote();
+
         alert('Devis enregistré avec succès! Prêt pour un nouveau devis.');
       } else {
         setSnackbarMessage('Erreur lors de l\'enregistrement du devis.');
@@ -79,10 +86,23 @@ const QuoteActions: React.FC<QuoteActionsProps> = ({
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     }
+    clearQuote();
+    createNewQuote();
+    window.location.href = '/quote';
+
   };
 
   // Handle save and print action
   const handleSaveAndPrint = async () => {
+    // Validate that client and site are selected
+    if (!clientName || !siteName || clientName.trim() === '' || siteName.trim() === '') {
+      alert('Veuillez sélectionner un client et un site avant d\'enregistrer le devis.');
+      setSnackbarMessage('Veuillez sélectionner un client et un site avant d\'enregistrer le devis.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+
     try {
       // First save the quote if it doesn't exist
       if (!isExistingQuote) {

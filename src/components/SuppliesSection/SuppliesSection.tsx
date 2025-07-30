@@ -284,8 +284,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
             min={0}
             step={0.01}
             fullWidth
-            displayOnly={true}
-            onChange={() => {}}
+            onChange={onUpdateExchangeRate}
           />
         </Box>
         <Box className="rates-container-item" sx={{ flex: '1 1 50px' }}>
@@ -296,8 +295,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
             max={1}
             step={0.01}
             fullWidth
-            displayOnly={true}
-            onChange={() => {}}
+            onChange={onUpdateMarginRate}
           />
         </Box>
       </Box>

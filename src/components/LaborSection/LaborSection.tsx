@@ -127,8 +127,7 @@ const LaborSection: React.FC<LaborSectionProps> = ({
             value={exchangeRate}
             min={0}
             step={0.01}
-            displayOnly={true}
-            onChange={() => {}}
+            onChange={onUpdateExchangeRate}
           />
         </Box>
         <Box className="rates-container-item" sx={{ flex: '1 1 50px' , width: '50%' }}>
@@ -138,8 +137,7 @@ const LaborSection: React.FC<LaborSectionProps> = ({
             min={0}
             max={1}
             step={0.01}
-            displayOnly={true}
-            onChange={() => {}}
+            onChange={onUpdateMarginRate}
           />
         </Box>
       </Box>

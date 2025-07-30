@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, IconButton, TextField } from '@mui/material';
+import { Box, IconButton } from '@mui/material';
 import { Add as AddIcon, Remove as RemoveIcon } from '@mui/icons-material';
 import './CustomNumberInput.scss';
 
@@ -14,7 +14,7 @@ interface CustomNumberInputProps {
   disabled?: boolean;
   variant?: 'outlined' | 'filled' | 'standard';
   margin?: 'none' | 'dense' | 'normal';
-  displayOnly?: boolean; // New prop
+  displayOnly?: boolean;
 }
 
 const CustomNumberInput: React.FC<CustomNumberInputProps> = ({
@@ -28,7 +28,7 @@ const CustomNumberInput: React.FC<CustomNumberInputProps> = ({
   disabled = false,
   variant = 'outlined',
   margin = 'dense',
-  displayOnly = false // New prop
+  displayOnly = false
 }) => {
   if (displayOnly) {
     return (
@@ -64,45 +64,50 @@ const CustomNumberInput: React.FC<CustomNumberInputProps> = ({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      handleIncrease();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      handleDecrease();
+    }
+  };
+
   return (
-    <Box className="custom-number-input" sx={{ display: 'inline-flex', alignItems: 'center', width: fullWidth ? '100%' : 'auto' }}>
-      <TextField
-        type="number"
-        value={value}
-        onChange={handleInputChange}
-        label={label}
-        variant={variant}
-        margin={margin}
-        disabled={disabled}
-        fullWidth={fullWidth}
-        InputProps={{
-          inputProps: {
-            min,
-            max,
-            step
-          },
-          startAdornment: (
-            <IconButton
-              size="small"
-              onClick={handleDecrease}
-              disabled={disabled || value <= min}
-              className="number-control-button decrease-button"
-            >
-              <RemoveIcon fontSize="small" />
-            </IconButton>
-          ),
-          endAdornment: (
-            <IconButton
-              size="small"
-              onClick={handleIncrease}
-              disabled={disabled || (max !== undefined && value >= max)}
-              className="number-control-button increase-button"
-            >
-              <AddIcon fontSize="small" />
-            </IconButton>
-          )
-        }}
-      />
+    <Box className="custom-number-input" sx={{ display: 'flex', flexDirection: 'column', width: fullWidth ? '100%' : 'auto' }}>
+      {label && <span className="custom-number-label">{label}</span>}
+      <Box className="custom-number-container">
+        <IconButton
+          size="small"
+          onClick={handleDecrease}
+          disabled={disabled || value <= min}
+          className="number-control-button decrease-button"
+        >
+          <RemoveIcon fontSize="small" />
+        </IconButton>
+
+        <input
+          type="number"
+          value={value}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          min={min}
+          max={max}
+          step={step}
+          disabled={disabled}
+          className={`custom-number-field ${variant} ${margin}`}
+        />
+
+        <IconButton
+          size="small"
+          onClick={handleIncrease}
+          disabled={disabled || (max !== undefined && value >= max)}
+          className="number-control-button increase-button"
+        >
+          <AddIcon fontSize="small" />
+        </IconButton>
+      </Box>
     </Box>
   );
 };

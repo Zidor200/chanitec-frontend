@@ -460,16 +460,16 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
       let isUpdate = false;
       let parentId: string | undefined = undefined;
 
-      // Always refresh exchange rate before saving
-      let exchangeRate = DEFAULT_EXCHANGE_RATE;
-      try {
-        exchangeRate = await apiService.getExchangeRate('EUR', 'USD');
-        exchangeRate = Math.round(exchangeRate * 1000) / 1000;
-      } catch (e) {
-        console.warn('Failed to fetch real-time exchange rate, using default:', e);
+      // Only refresh exchange rate if it hasn't been manually modified by the user
+      // For new quotes, use the current values (which may have been fetched initially)
+      // For existing quotes, preserve the user's modifications
+      if (!state.currentQuote.id || state.currentQuote.version === 0) {
+        // For new quotes, keep the current exchange rates (they were set during creation)
+        // No need to refresh them here as they're already set to the latest values
+      } else {
+        // For existing quotes, preserve the user's modifications
+        // Don't overwrite the exchange rates with fresh API values
       }
-      quoteToSave.supplyExchangeRate = exchangeRate;
-      quoteToSave.laborExchangeRate = exchangeRate;
 
       // If it's a new quote (no ID or version 0), create it
       if (!state.currentQuote.id || state.currentQuote.version === 0) {
@@ -500,8 +500,8 @@ export const QuoteProvider: React.FC<QuoteProviderProps> = ({ children }) => {
           version: 1,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          supplyExchangeRate: exchangeRate,
-          laborExchangeRate: exchangeRate,
+          supplyExchangeRate: quoteToSave.supplyExchangeRate,
+          laborExchangeRate: quoteToSave.laborExchangeRate,
           metadata: {
             ...state.currentQuote.metadata,
             version: 1,

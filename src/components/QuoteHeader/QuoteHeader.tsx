@@ -148,10 +148,11 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
       const margin = Number(selectedClient.Taux_marge);
       if (!isNaN(margin)) {
         setClientMargin(margin);
-        if (onClientMarginChange) onClientMarginChange(margin);
+        // Don't automatically set margin rates - let user control them manually
+        // if (onClientMarginChange) onClientMarginChange(margin);
       }
     }
-  }, [clientName, clients, onClientMarginChange]);
+  }, [clientName, clients]);
 
   // Handle client selection change - with safeguards for debugging
   const handleClientChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,12 +162,13 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
       const selectedClient = clients.find(c => c.name === value);
       // Call the parent to update the client name
       onClientChange(value);
-      // If the client has a Taux_marge, update local state and call margin change handler
+      // If the client has a Taux_marge, update local state but don't automatically set margin rates
       if (selectedClient && selectedClient.Taux_marge != null) {
         const margin = Number(selectedClient.Taux_marge);
         if (!isNaN(margin)) {
           setClientMargin(margin);
-          if (onClientMarginChange) onClientMarginChange(margin);
+          // Don't automatically set margin rates - let user control them manually
+          // if (onClientMarginChange) onClientMarginChange(margin);
         }
       }
       // Clear site when client changes
@@ -175,6 +177,8 @@ const QuoteHeader: React.FC<QuoteHeaderProps> = ({
       console.error('Error in client selection handler:', error);
     }
   };
+
+
 
   const version = extractVersion(quoteId);
   const isRevision = version !== null && version > 0;
