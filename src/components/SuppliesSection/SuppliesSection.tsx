@@ -274,6 +274,27 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
         <MenuItem value="Extension des raccordements électriques, frigorifique et condensat">
           Extension des raccordements électriques, frigorifique et condensat
         </MenuItem>
+        <MenuItem value="Installation complète du Split">
+          Installation complète du Split
+        </MenuItem>
+        <MenuItem value="Livraison et pose du Split avec accessoires de raccordement">
+          Livraison et pose du Split avec accessoires de raccordement
+        </MenuItem>
+        <MenuItem value="Fournitures Epa du calorifuger plus accessoires">
+          Fournitures Epa du calorifuger plus accessoires
+        </MenuItem>
+        <MenuItem value="Fournitures et pose des pièces électriques et frigorifique">
+          Fournitures et pose des pièces électriques et frigorifique
+        </MenuItem>
+        <MenuItem value="Fournitures et pose des pièces électriques">
+          Fournitures et pose des pièces électriques
+        </MenuItem>
+        <MenuItem value="Fournitures et pose des pièces frigorifique">
+          Fournitures et pose des pièces frigorifique
+        </MenuItem>
+        <MenuItem value="Réparation du Ventilo convecteur">
+          Réparation du Ventilo convecteur
+        </MenuItem>
       </TextField>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }} className="rates-container">

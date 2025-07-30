@@ -85,6 +85,22 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
       );
       setClients(clientsWithSites);
       setQuotes(allQuotes || []);
+
+      // Check for passed reminder dates
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const passedReminders = (allQuotes || []).filter(quote => {
+        if (!quote.reminderDate) return false;
+        const reminderDate = new Date(quote.reminderDate);
+        reminderDate.setHours(0, 0, 0, 0);
+        return reminderDate < today;
+      });
+
+      if (passedReminders.length > 0) {
+        const quoteIds = passedReminders.map(q => q.id).join(', ');
+        alert(`Attention: Les rappels pour les devis suivants sont passés: ${quoteIds}`);
+      }
     };
     fetchData();
   }, []);

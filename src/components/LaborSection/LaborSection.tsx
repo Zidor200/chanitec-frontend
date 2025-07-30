@@ -118,6 +118,12 @@ const LaborSection: React.FC<LaborSectionProps> = ({
         <MenuItem value="Fixation, mise au point, raccordement, mise en vide et mise en service ">
           Fixation, mise au point, raccordement, mise en vide et mise en service
         </MenuItem>
+        <MenuItem value="Mise au point, raccordement, mise en vide, mise en service, contrôle du rendement En weekend">
+          Mise au point, raccordement, mise en vide, mise en service, contrôle du rendement En weekend
+        </MenuItem>
+        <MenuItem value="Mise au point, raccordement, mise en vide, mise en service, contrôle du rendement">
+          Mise au point, raccordement, mise en vide, mise en service, contrôle du rendement
+        </MenuItem>
       </TextField>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems:  'right' , gap: 5 }} className="rates-container">

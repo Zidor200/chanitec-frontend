@@ -1,0 +1,195 @@
+CHANGELOG - TODAY'S UPDATES
+=====================================
+Date: Today
+Project: Chanitec Frontend
+
+SUMMARY OF CHANGES:
+==================
+
+1. QUOTE UPDATE LOGIC REFACTORING
+   - Modified quote update logic to create new quotes with parent references instead of versioning
+   - Added parentId field to Quote model for tracking parent-child relationships
+   - Updated QuoteContext.tsx to handle new update flow
+
+2. HISTORY PAGE IMPROVEMENTS
+   - Updated grouping logic to use parentId instead of baseId
+   - Added date filtering with calendar pickers for custom periods
+   - Implemented reminder date checking with alerts for passed reminders
+   - Simplified quote deletion to use only quote ID
+
+3. QUOTE DESCRIPTION DROPDOWNS
+   - Converted supply and labor description fields from text inputs to dropdowns
+   - Added predefined options for both supplies and labor tables
+
+4. NAVIGATION AND PAGE REFRESH
+   - Updated home button behavior to properly reset quote page
+   - Ensured fresh quote creation when navigating home from quote page
+
+DETAILED CHANGES:
+================
+
+1. QUOTE MODEL UPDATES (src/models/Quote.ts)
+   - Added parentId?: string field to Quote interface
+   - This field references the parent quote when creating updates
+
+2. QUOTE CONTEXT UPDATES (src/contexts/QuoteContext.tsx)
+   - Modified saveQuote function to handle new update logic:
+     * New quotes get parentId: "" (empty string)
+     * Updated quotes get parentId set to original quote's ID
+     * Updated quotes get new ID and version reset to 1
+   - Consolidated updateQuote to use saveQuote logic
+   - Removed old versioning logic based on ID parsing
+
+3. HISTORY PAGE UPDATES (src/pages/HistoryPage/HistoryPage.tsx)
+   - Updated groupedQuotes logic:
+     * Now groups by parentId if valid, otherwise by quote's own ID
+     * Handles empty string, undefined, and '0' as no parent
+   - Added date filtering improvements:
+     * Added parseQuoteDate helper function for consistent date handling
+     * Fixed date comparison issues with timezone handling
+     * Added calendar pickers for custom date range selection
+   - Added reminder date checking:
+     * Checks all quotes for passed reminder dates on page load
+     * Shows alert with quote IDs for passed reminders
+   - Updated deleteQuote function:
+     * Removed createdAt parameter requirement
+     * Now uses only quote ID for deletion
+
+4. API SERVICE UPDATES (src/services/api-service.ts)
+   - Updated deleteQuote method:
+     * Removed createdAt parameter
+     * Changed endpoint from /quotes/:id/:createdAt to /quotes/:id
+
+5. SUPPLIES SECTION UPDATES (src/components/SuppliesSection/SuppliesSection.tsx)
+   - Converted description field from multiline text input to dropdown
+   - Added predefined supply options:
+     * Extension des raccordements électriques, frigorifique et condensat
+     * Installation complète du Split
+     * Livraison et pose du Split avec accessoires de raccordement
+     * Fournitures Epa du calorifuger plus accessoires
+     * Fournitures et pose des pièces électriques et frigorifique
+     * Fournitures et pose des pièces électriques
+     * Fournitures et pose des pièces frigorifique
+     * Réparation du Ventilo convecteur
+
+6. LABOR SECTION UPDATES (src/components/LaborSection/LaborSection.tsx)
+   - Converted description field from multiline text input to dropdown
+   - Added predefined labor options:
+     * Fixation, mise au point, raccordement, mise en vide et mise en service En weekend
+     * Fixation, mise au point, raccordement, mise en vide et mise en service
+     * Mise au point, raccordement, mise en vide, mise en service, contrôle du rendement En weekend
+     * Mise au point, raccordement, mise en vide, mise en service, contrôle du rendement
+
+7. QUOTE PAGE UPDATES (src/pages/QuotePage/QuotePage.tsx)
+   - Updated handleHomeClick function:
+     * Now properly clears current quote and creates new one
+     * Navigates to /quote instead of / for fresh start
+     * Ensures complete page reset when clicking home button
+
+TECHNICAL IMPROVEMENTS:
+======================
+- Improved date handling with consistent parsing
+- Better error handling for quote operations
+- Enhanced user experience with dropdown selections
+- More robust parent-child quote relationships
+- Improved reminder system with automatic alerts
+
+USER EXPERIENCE IMPROVEMENTS:
+============================
+- Easier quote description selection with predefined options
+- Better date filtering with visual calendar pickers
+- Automatic alerts for passed reminders
+- Cleaner quote update process
+- Improved navigation with proper page resets
+
+FILES MODIFIED:
+==============
+1. src/models/Quote.ts
+2. src/contexts/QuoteContext.tsx
+3. src/pages/HistoryPage/HistoryPage.tsx
+4. src/services/api-service.ts
+5. src/components/SuppliesSection/SuppliesSection.tsx
+6. src/components/LaborSection/LaborSection.tsx
+7. src/pages/QuotePage/QuotePage.tsx
+
+TESTING RECOMMENDATIONS:
+=======================
+- Test quote creation and update flow
+- Verify parent-child relationships in history
+- Test date filtering with various date ranges
+- Verify reminder alerts work correctly
+- Test dropdown selections in supplies and labor sections
+- Verify home button properly resets quote page
+
+NOTES:
+======
+- All changes maintain backward compatibility
+- No breaking changes to existing functionality
+- Improved data consistency with parentId tracking
+- Enhanced user interface with better form controls
+
+USER PROMPTS/REQUESTS FROM TODAY:
+=================================
+
+1. "analyze the whole porject logic and check if there is anything we can improve or opitmize"
+   - Response: Provided high-level analysis and improvement suggestions without making changes
+
+2. "if i want to recheck all of this projects logics and code to fix it or improve it , how should i start"
+   - Response: Provided step-by-step approach for systematic code review and improvement
+
+3. "show me the logic on creating quote"
+   - Response: Explained the complete quote creation flow and logic
+
+4. "what is the logic on updating a quote"
+   - Response: Explained the quote update logic and flow
+
+5. "if i want to change the update logic to use the same logic as creating a quote except with incremented quote.version and the new infromations updated"
+   - Response: Explained how to modify update logic to mirror creation logic
+
+6. "when updating a quote i want to use a new method New qquote ID + Parent Reference. instead of same quote id and version"
+   - Response: Explained the new parent-child relationship approach for quote updates
+
+7. "what is necessary to do this change"
+   - Response: Listed all necessary steps to implement parent-child quote relationships
+
+8. "can you do all the frontend changes"
+   - Response: Implemented all frontend changes for parent-child quote relationships
+
+9. "when creating a new quote make sure to keep the parentId null . and when updating a quote put the parentId"
+   - Response: Updated logic to set parentId to empty string for new quotes and original quote ID for updates
+
+10. "in history page when loading quote . if it doesn't have a parentId consider it as an original quote if it does have a parentId group it with the parent Id"
+    - Response: Updated history page grouping logic to use parentId relationships
+
+11. "when deleting a quote from hisotry page chnage it to only use quote id to delete"
+    - Response: Simplified quote deletion to use only quote ID
+
+12. "when creating a quote put the parentId to empty """
+    - Response: Updated quote creation to set parentId to empty string
+
+13. "in history page in the filter section when putting a custome period i need it to drop a calneder list to select from to when date"
+    - Response: Added calendar date pickers for custom date range filtering
+
+14. "in the quote page make the fourniture table defscription to be a drop list for the moment has this option only 'Extension des raccordements électriques, frigorifique et condensat' and fro the labrou table decription put these : 'Fixation, mise au point, raccordement, mise en vide et mise en service En weekend' and 'Fixation, mise au point, raccordement, mise en vide et mise en service '"
+    - Response: Converted description fields to dropdowns with specified options
+
+15. "when i am in quote page and i press on accuielle button i want the page to refresh as new"
+    - Response: Updated home button to properly reset quote page
+
+16. "the supply and labor table have a pre-defined descritpiotns . i want to add more options . where can i add them"
+    - Response: Explained where to add more dropdown options
+
+17. "- Installation complète du Split - Livraison et pose du Split avec accessoires de raccordement - Fournitures Epa du calorifuger plus accessoires - Fournitures et pose des pièces électriques et frigorifique - Fournitures et pose des pièces électriques - Fournitures et pose des pièces frigorifique - Réparation du Ventilo convecteur add these option in the supply table descriptions . remove any demo option"
+    - Response: Added all specified supply options to dropdown
+
+18. "add these options to labour table desription . - Fixation mise au point, raccordement, mise en vide et mise en service - Mise au point, raccordement, mise en vide, mise en service, contrôle du rendement add each option noraml one and en weekend one"
+    - Response: Added labor options with normal and weekend versions
+
+19. "in history page when you load the quotes . check if the reminder date for any quote is passed , if so alert me"
+    - Response: Added reminder date checking with alerts for passed reminders
+
+20. "create a .txt file contains excalty what we changed and updated into this project for today with details"
+    - Response: Created this comprehensive changelog file
+
+21. "can you put all the prompts i sent you today for this project at the bottom of the changlog .txt"
+    - Response: Added this section with all user prompts from today
