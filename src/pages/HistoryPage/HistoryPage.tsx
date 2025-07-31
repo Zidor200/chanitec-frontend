@@ -23,7 +23,6 @@ import logo from '../../logo.png';
 import AddAlarmIcon from '@mui/icons-material/AddAlarm';
 import { Client, Site, Quote } from '../../models/Quote';
 import { apiService } from '../../services/api-service';
-import { extractBaseId } from '../../utils/id-generator';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberInput';
@@ -400,6 +399,19 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                           <Typography className="label">Total TTC</Typography>
                           <Typography className="value total">
                             {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(quote.totalTTC)}
+                            {quote.remise && quote.remise > 0 && (
+                              <Typography
+                                component="span"
+                                sx={{
+                                  ml: 1,
+                                  color: '#4caf50',
+                                  fontSize: '0.85em',
+                                  fontWeight: 'bold'
+                                }}
+                              >
+                                (-{quote.remise}%)
+                              </Typography>
+                            )}
                           </Typography>
                         </Box>
                       </Box>

@@ -11,7 +11,7 @@ import {
   FormControl,
   InputLabel
 } from '@mui/material';
-import { PrintOutlined, Download } from '@mui/icons-material';
+import { PrintOutlined } from '@mui/icons-material';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -37,6 +37,21 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [signatureOption, setSignatureOption] = useState<'single' | 'double' | 'none'>('double');
+
+  // Function to format description text with "En weekend" in bold red
+  const formatDescriptionText = (text: string) => {
+    if (text.includes('En weekend')) {
+      const parts = text.split('En weekend');
+      return (
+        <span>
+          {parts[0]}
+          <span style={{ fontWeight: 'bold', color: 'red' }}>En weekend</span>
+          {parts[1]}
+        </span>
+      );
+    }
+    return text;
+  };
 
   useEffect(() => {
     const loadPriceOffer = async () => {
@@ -90,6 +105,7 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
           totalHT: quote.totalHT,
           tva: quote.tva,
           totalTTC: quote.totalTTC,
+          remise: quote.remise,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
@@ -194,6 +210,30 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
               </Box>
             </Box>
 
+            {/* Remise Message */}
+            {priceOffer.remise && priceOffer.remise > 0 && (
+              <Box sx={{
+                mt: 2,
+                mb: 3,
+                p: 2,
+                backgroundColor: '#e8f5e8',
+                border: '1px solid #4caf50',
+                borderRadius: 1,
+                textAlign: 'center'
+              }}>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: '#2e7d32',
+                    fontWeight: 'bold',
+                    fontSize: '1.1rem'
+                  }}
+                >
+                  Remise appliquée : {priceOffer.remise}%
+                </Typography>
+              </Box>
+            )}
+
             {/* Items Table */}
             <Box sx={{ mb: 4 }}>
               <table className="items-table">
@@ -219,7 +259,7 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
                   <tr>
                     <td>2</td>
                     <td>Prestation</td>
-                    <td>{priceOffer.laborDescription}</td>
+                    <td>{formatDescriptionText(priceOffer.laborDescription || '')}</td>
                     <td>1,00</td>
                     <td>{(Number(priceOffer.laborTotalHT ?? 0)).toFixed(2)}</td>
                     <td>{(Number(priceOffer.laborTotalHT ?? 0)).toFixed(2)}</td>

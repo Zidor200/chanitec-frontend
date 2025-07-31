@@ -209,7 +209,11 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
       return;
     }
 
-    if (!newSiteName.trim()) {
+    // Check if we have sites added or if we need to use the newSiteName
+    const hasSites = (currentClient.sites?.length || 0) > 0;
+    const siteNameToUse = hasSites ? currentClient.sites![0].name : newSiteName.trim();
+
+    if (!siteNameToUse) {
       showSnackbar('Le nom du site est requis', 'error');
       return;
     }
@@ -242,7 +246,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: newSiteName.trim(),
+          name: siteNameToUse,
           client_id: newClient.id
         })
       });
@@ -659,22 +663,46 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
             margin="dense"
             variant="outlined"
           />
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <TextField
-              label="Nom du site"
-              size="small"
-              fullWidth
-              value={newSiteName}
-              onChange={(e) => setNewSiteName(e.target.value)}
-            />
-            <Button
-              variant="outlined"
-              onClick={handleAddSite} // Calls the updated function
-              disabled={!newSiteName.trim()}
-            >
-              Ajouter
-            </Button>
-          </Box>
+          {/* Show site name field if no sites have been added yet, or if user wants to add another site */}
+          {(currentClient.sites?.length || 0) === 0 && (
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+              <TextField
+                label="Nom du site"
+                size="small"
+                fullWidth
+                value={newSiteName}
+                onChange={(e) => setNewSiteName(e.target.value)}
+              />
+              <Button
+                variant="outlined"
+                onClick={handleAddSite}
+                disabled={!newSiteName.trim()}
+              >
+                Ajouter
+              </Button>
+            </Box>
+          )}
+
+          {/* Show option to add another site if sites already exist */}
+          {(currentClient.sites?.length || 0) > 0 && (
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+              <TextField
+                label="Nom du site (optionnel)"
+                size="small"
+                fullWidth
+                value={newSiteName}
+                onChange={(e) => setNewSiteName(e.target.value)}
+                placeholder="Ajouter un autre site..."
+              />
+              <Button
+                variant="outlined"
+                onClick={handleAddSite}
+                disabled={!newSiteName.trim()}
+              >
+                Ajouter un site
+              </Button>
+            </Box>
+          )}
           <List>
             {currentClient.sites?.map((site, siteIdx) => (
               <Box key={site.id} sx={{ mb: 2, border: '1px solid #eee', borderRadius: 1, p: 1 }}>
