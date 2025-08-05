@@ -12,7 +12,9 @@ import {
   Paper,
   Card,
   IconButton,
-  Divider
+  Divider,
+  FormControlLabel,
+  Switch
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -21,6 +23,7 @@ import './HistoryPage.scss';
 import { ReceiptLongOutlined } from '@mui/icons-material';
 import logo from '../../logo.png';
 import AddAlarmIcon from '@mui/icons-material/AddAlarm';
+import WarningIcon from '@mui/icons-material/Warning';
 import { Client, Site, Quote } from '../../models/Quote';
 import { apiService } from '../../services/api-service';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -41,6 +44,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
     period: 'all',
     startDate: '',
     endDate: '',
+    showAlertedOnly: false,
   });
   const [clients, setClients] = useState<Client[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
@@ -129,6 +133,16 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
     return new Date(dateStr);
   };
 
+  // Helper to check if quote has passed reminder date and is not confirmed
+  const hasPassedReminderDate = (quote: Quote): boolean => {
+    if (!quote.reminderDate || quote.confirmed) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const reminderDate = new Date(quote.reminderDate);
+    reminderDate.setHours(0, 0, 0, 0);
+    return reminderDate < today;
+  };
+
   // Apply filters to quotes
   useEffect(() => {
     let result = [...quotes];
@@ -140,6 +154,10 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
     }
     if (filters.site) {
       result = result.filter(q => q.siteName === (sites.find(s => s.id === filters.site)?.name));
+    }
+    // Filter for alerted quotes (passed reminder date and not confirmed)
+    if (filters.showAlertedOnly) {
+      result = result.filter(q => hasPassedReminderDate(q));
     }
     // Date filtering logic for period
     if (filters.period !== 'all') {
@@ -189,7 +207,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
     setFilters(prev => ({ ...prev, [field]: value }));
   };
   const handleClearFilters = () => {
-    setFilters({ id: '', client: '', site: '', period: 'all', startDate: '', endDate: '' });
+    setFilters({ id: '', client: '', site: '', period: 'all', startDate: '', endDate: '', showAlertedOnly: false });
   };
 
   // Handlers for quote card actions
@@ -341,7 +359,17 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
             )}
           </Box>
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={filters.showAlertedOnly}
+                  onChange={(e) => handleFilterChange('showAlertedOnly', e.target.checked.toString())}
+                  color="warning"
+                />
+              }
+              label="Afficher uniquement les devis avec rappel dépassé"
+            />
             <Button variant="outlined" size="small" onClick={handleClearFilters}>
               Effacer les filtres
             </Button>
@@ -370,6 +398,10 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                           <CheckCircleIcon sx={{ color: '#4caf50', ml: 1 }} titleAccess="Confirmé" />
                         ) : (
                           <CheckCircleOutlineIcon sx={{ color: '#bdbdbd', ml: 1 }} titleAccess="Non confirmé" />
+                        )}
+                        {/* Alert icon for passed reminder date */}
+                        {hasPassedReminderDate(quote) && (
+                          <WarningIcon sx={{ color: '#ff9800', ml: 1 }} titleAccess="Rappel dépassé" />
                         )}
                         <Typography component="span" className={`version-label ${isOriginal ? 'original' : 'update'}`}
                           sx={{ ml: 1 }}>

@@ -588,7 +588,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
                           {site.splits && site.splits.length > 0 && (
                             <Box sx={{ pl: 5, pb: 1 }}>
                               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                                Splits:
+                                Équipement frigorifique:
                               </Typography>
                               <List dense>
                                 {site.splits.map((split, splitIdx) => (
@@ -644,25 +644,15 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
           {isEditing ? 'Modifier le client' : 'Nouveau Client'}
         </DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Nom du client"
-            type="text"
-            fullWidth
-            value={currentClient.name}
-            onChange={(e) => setCurrentClient({ ...currentClient, name: e.target.value })}
-          />
-          <CustomNumberInput
-            label="Taux de Marge"
-            value={currentClient.Taux_marge || 0}
-            onChange={(value) => setCurrentClient({ ...currentClient, Taux_marge: value })}
-            step={0.01}
-            min={0}
-            fullWidth
-            margin="dense"
-            variant="outlined"
-          />
+                     <TextField
+             autoFocus
+             margin="dense"
+             label="Nom du client"
+             type="text"
+             fullWidth
+             value={currentClient.name}
+             onChange={(e) => setCurrentClient({ ...currentClient, name: e.target.value })}
+           />
           {/* Show site name field if no sites have been added yet, or if user wants to add another site */}
           {(currentClient.sites?.length || 0) === 0 && (
             <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
@@ -716,11 +706,11 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
                   <ListItemText primary={site.name} />
                 </ListItem>
                 {/* Splits for this site */}
-                <Typography variant="subtitle2" sx={{ mt: 1 }}>Splits</Typography>
+                <Typography variant="subtitle2" sx={{ mt: 1 }}>Équipement frigorifique</Typography>
                 {(site.splits ?? []).map((split, splitIdx) => (
                   <Box key={splitIdx} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
                     <TextField
-                      label="Code split"
+                      label="ID"
                       size="small"
                       value={split.Code}
                       onChange={e => {
@@ -738,7 +728,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
                       }}
                     />
                     <TextField
-                      label="Nom du split"
+                      label="Type"
                       size="small"
                       value={split.name}
                       onChange={e => {
@@ -756,10 +746,10 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
                       }}
                     />
                     <TextField
+                      select
                       label="Puissance"
                       size="small"
-                      type="number"
-                      value={split.puissance}
+                      value={split.puissance || ''}
                       onChange={e => {
                         const newSites = (currentClient.sites || []).map((s, idx) =>
                           idx === siteIdx
@@ -773,7 +763,13 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
                         );
                         setCurrentClient({ ...currentClient, sites: newSites });
                       }}
-                    />
+                      sx={{ minWidth: 120 }}
+                    >
+                      <MenuItem value={9000}>9000</MenuItem>
+                      <MenuItem value={12000}>12000</MenuItem>
+                      <MenuItem value={18000}>18000</MenuItem>
+                      <MenuItem value={24000}>24000</MenuItem>
+                    </TextField>
                     <IconButton
                       size="small"
                       onClick={() => {
@@ -817,7 +813,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
                     setCurrentClient({ ...currentClient, sites: newSites });
                   }}
                 >
-                  Ajouter un split
+                  Ajouter un équipement
                 </Button>
               </Box>
             ))}
