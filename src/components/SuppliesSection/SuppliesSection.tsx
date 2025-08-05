@@ -421,20 +421,21 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
 
           <TableContainer className="search-results-container">
             <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Description</TableCell>
-                  <TableCell align="right">Prix €</TableCell>
-                  <TableCell align="center">Action</TableCell>
-                </TableRow>
-              </TableHead>
+                             <TableHead>
+                 <TableRow>
+                   <TableCell>Description</TableCell>
+                   <TableCell align="right">Quantité</TableCell>
+                   <TableCell align="right">Prix €</TableCell>
+                   <TableCell align="center">Action</TableCell>
+                 </TableRow>
+               </TableHead>
               <TableBody>
-                {filteredItems.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={3} align="center">
-                      Aucun article trouvé
-                    </TableCell>
-                  </TableRow>
+                                 {filteredItems.length === 0 ? (
+                   <TableRow>
+                     <TableCell colSpan={4} align="center">
+                       Aucun article trouvé
+                     </TableCell>
+                   </TableRow>
                 ) : (
                   filteredItems.map((item) => (
                     <TableRow
@@ -442,21 +443,16 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
                       className={selectedItem?.id === item.id ? 'selected-item' : ''}
                       onClick={() => handleSelectItem(item)}
                     >
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          {item.description}
-                          {item.quantity === 0 && (
-                            <Chip
-                              icon={<WarningIcon />}
-                              label="Stock épuisé"
-                              size="small"
-                              color="warning"
-                              variant="outlined"
-                            />
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell align="right">{Number(item.priceEuro || 0).toFixed(2)}</TableCell>
+                                                                    <TableCell>
+                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                           {item.description}
+                           {item.quantity === 0 && (
+                             <WarningIcon fontSize="small" color="warning" />
+                           )}
+                         </Box>
+                       </TableCell>
+                       <TableCell align="right">{item.quantity}</TableCell>
+                       <TableCell align="right">{Number(item.priceEuro || 0).toFixed(2)}</TableCell>
                       <TableCell align="center">
                         <Button
                           size="small"

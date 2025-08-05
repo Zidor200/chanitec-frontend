@@ -34,20 +34,20 @@ const CustomNumberInput: React.FC<CustomNumberInputProps> = ({
     return (
       <Box className="custom-number-input display-only" sx={{ display: 'flex', flexDirection: 'column', width: fullWidth ? '100%' : 'auto' }}>
         {label && <span className="custom-number-label" style={{ fontWeight: 500, marginBottom: 2 }}>{label}</span>}
-        <span className="custom-number-value" style={{ padding: '8.5px 14px', background: '#f5f5f5', borderRadius: 4, color: '#888', minHeight: 38 }}>{value}</span>
+        <span className="custom-number-value" style={{ padding: '8.5px 14px', background: '#f5f5f5', borderRadius: 4, color: '#888', minHeight: 38 }}>{Number(value).toFixed(2)}</span>
       </Box>
     );
   }
 
   const handleIncrease = () => {
     if (max === undefined || value < max) {
-      onChange(value + step);
+      onChange(Number((value + step).toFixed(2)));
     }
   };
 
   const handleDecrease = () => {
     if (value > min) {
-      onChange(value - step);
+      onChange(Number((value - step).toFixed(2)));
     }
   };
 
@@ -89,7 +89,7 @@ const CustomNumberInput: React.FC<CustomNumberInputProps> = ({
 
         <input
           type="number"
-          value={value}
+          value={Number(value).toFixed(2)}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           min={min}

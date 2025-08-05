@@ -384,7 +384,7 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
           <label>Tx de chg:</label>
           <span> {currentQuote.supplyExchangeRate || 1.15}</span>
           <label>Tx de marge:</label>
-          <span>{currentQuote.supplyMarginRate || 0.75}</span>
+          <span>{(currentQuote.supplyMarginRate || 0.75).toFixed(2)}</span>
         </div>
 
         </div>
@@ -427,7 +427,7 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
           <label>Tx de chg:</label>
           <span>{currentQuote.laborExchangeRate || 1.2}</span>
           <label>Tx de marge:</label>
-          <span>{currentQuote.laborMarginRate || 0.8}</span>
+          <span>{(currentQuote.laborMarginRate || 0.8).toFixed(2)}</span>
           </div>
         </div>
 

@@ -19,23 +19,33 @@ import {
   Typography,
   Tooltip,
   Snackbar,
-  Alert
+  Alert,
+  FormControl,
+  Select,
+  MenuItem,
+  Slider,
+  InputLabel,
+  InputAdornment
 } from '@mui/material';
+import Layout from '../../components/Layout/Layout';
+import logo from '../../logo.png';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
   FileUpload as FileUploadIcon,
-  WarningAmber as WarningAmberIcon
+  WarningAmber as WarningAmberIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon
 } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
-import Layout from '../../components/Layout/Layout';
+
 import { SupplyItem } from '../../models/Quote';
 import { itemsApi } from '../../services/api';
 import './ItemsPage.scss';
 import { v4 as uuidv4 } from 'uuid';
 import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberInput';
-import logo from '../../logo.png';
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 
@@ -83,6 +93,7 @@ interface ImportResults {
 }
 
 interface ProcessedExcelItem {
+  id: string;
   description: string;
   priceEuro: number;
   quantity: number;
@@ -90,6 +101,7 @@ interface ProcessedExcelItem {
   isValid: boolean;
   validationError?: string;
   originalRow: {
+    id: any;
     description: any;
     quantity: any;
     price: any;
@@ -114,6 +126,10 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
   const [filteredItems, setFilteredItems] = useState<SupplyItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // State for filters
+  const [quantityFilter, setQuantityFilter] = useState('all');
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+
   // State for dialog
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -135,15 +151,19 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
   // State for loading
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const handleHomeClick = () => {
+    onNavigate('/');
+  };
+
   // Load items when component mounts
   useEffect(() => {
     loadItems();
   }, []);
 
-  // Filter items when search term changes
+  // Filter items when search term or filters change
   useEffect(() => {
     filterItems();
-  }, [searchTerm, items]);
+  }, [searchTerm, items, quantityFilter, priceRange]);
 
   // Load all items from API
   const loadItems = async () => {
@@ -169,16 +189,29 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
     }
   };
 
-  // Filter items based on search term
+  // Filter items based on search term and filters
   const filterItems = () => {
-    if (!searchTerm.trim()) {
-      setFilteredItems(items);
-    } else {
-      const filtered = items.filter(item =>
-        item.description.toLowerCase().includes(searchTerm.toLowerCase())
+    let filtered = [...items];
+
+    // Search filter
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(item =>
+        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.id.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setFilteredItems(filtered);
     }
+
+    // Quantity filter
+    if (quantityFilter === 'zero') {
+      filtered = filtered.filter(item => item.quantity === 0);
+    }
+
+    // Price range filter
+    filtered = filtered.filter(item =>
+      item.priceEuro >= priceRange[0] && item.priceEuro <= priceRange[1]
+    );
+
+    setFilteredItems(filtered);
   };
 
   // Show snackbar with message
@@ -191,6 +224,13 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
   // Close snackbar
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm('');
+    setQuantityFilter('all');
+    setPriceRange([0, 1000]);
   };
 
   // Open dialog to add a new item
@@ -381,8 +421,12 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
             const row = jsonData[i] as any[];
             if (!row || row.length < 4) continue;
 
+            // Extract ID from column A
+            const id = String(row[0] || '').trim();
+            if (!id) continue; // Skip rows without ID
+
             const description = String(row[1] || '').trim(); // Column B
-            if (!description) continue;
+            if (!description) continue; // Skip rows without description
 
             let quantity = 0;
             const quantityValue = row[2]; // Column C
@@ -404,12 +448,14 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
             }
 
             const processedItem: ProcessedExcelItem = {
+              id: id, // Add ID to the processed item
               description,
               priceEuro: price,
               quantity: quantity,
               rowIndex: i + 1,
               isValid: true,
               originalRow: {
+                id: row[0],
                 description: row[1],
                 quantity: row[2],
                 price: row[3]
@@ -424,28 +470,21 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
             let successCount = 0;
             let errorCount = 0;
 
-            for (const item of processedItems) {
+                        for (const item of processedItems) {
               try {
-                // Create a new item using the API
-                const response = await fetch(`${API_BASE_URL}/items`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    description: item.description,
-                    price: item.priceEuro,
-                    quantity: item.quantity
-                  })
-                });
+                // Create item with custom ID from Excel
+                const itemData = {
+                  id: item.id, // Include the Excel ID
+                  description: item.description,
+                  price: item.priceEuro,
+                  quantity: item.quantity
+                };
 
-                if (!response.ok) {
-                  throw new Error(`Failed to save item: ${response.statusText}`);
-                }
-
-                await response.json();
+                // Use the createItemWithCustomId method
+                await itemsApi.createItemWithCustomId(itemData);
                 successCount++;
               } catch (error) {
+                console.error(`Error importing item ${item.id}:`, error);
                 errorCount++;
               }
             }
@@ -483,133 +522,204 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
   };
 
   return (
-    <Layout currentPath={currentPath} onNavigate={onNavigate}>
-      <Box sx={{ display: 'flex', position: 'relative', width: '100%',height: '80px', backgroundColor: '#1976d2' , color: 'white'}} className="page-header">
-        <Box sx={{ position: 'absolute', left: 0 , display: 'flex', alignItems: 'center',gap: 25 }}>
+    <Layout currentPath={currentPath} onNavigate={onNavigate} onHomeClick={handleHomeClick}>
+      <Box sx={{ display: 'flex', position: 'relative', width: '100%' , backgroundColor: 'white' , color: 'black',height:'20%'}} className="page-header">
+        <Box sx={{ position: 'absolute', left: 0 }}>
           <img
             src={logo}
             alt="Logo"
             style={{ height: '60px' }}
           />
-          <Typography variant="h6" className="header-title">
-          ARTICLES DE FOURNITURE
+        </Box>
+        <Box sx={{  }}>
+          <Typography variant="h6" component="h1" className="page-title">
+            ARTICLES
           </Typography>
         </Box>
-         </Box>
-      <Container className="items-page-container">
-        <Paper elevation={2} className="items-paper">
-          <Box className="items-header">
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography variant="subtitle1" sx={{ color: 'text.secondary',marginRight: 2 }}>
-                ({items.length} articles)
-              </Typography>
+      </Box>
+
+      <Box className="items-page">
+        {/* Header Section */}
+        <Box className="page-header">
+          <Container maxWidth="lg">
+            <Box className="header-content">
+              <Box className="header-left">
+                <Typography variant="h6" className="item-count">
+                  ({filteredItems.length} articles)
+                </Typography>
+                <Box className="search-container">
+                                     <TextField
+                     placeholder="Rechercher par ID ou description"
+                     value={searchTerm}
+                     onChange={(e) => setSearchTerm(e.target.value)}
+                     variant="outlined"
+                     size="small"
+                     className="search-input"
+                     InputProps={{
+                       startAdornment: (
+                         <InputAdornment position="start">
+                           <SearchIcon />
+                         </InputAdornment>
+                       ),
+                     }}
+                   />
+                </Box>
+              </Box>
+              <Box className="header-actions">
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddItem}
+                  disabled={loading}
+                  className="add-item-btn"
+                >
+                  Ajouter un article
+                </Button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept=".xlsx,.xls"
+                  style={{ display: 'none' }}
+                />
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<FileUploadIcon />}
+                  endIcon={<KeyboardArrowDownIcon />}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading}
+                  className="import-excel-btn"
+                >
+                  Importer Excel
+                </Button>
+              </Box>
             </Box>
-            <Box className="search-and-add">
-              <TextField
-                label="Rechercher un article"
+          </Container>
+        </Box>
+
+        <Container maxWidth="lg" className="main-content">
+          {/* Filter Section */}
+          <Box className="filter-section">
+            <Box className="filter-content">
+              <Box className="filter-left">
+                <FormControl size="small" className="quantity-filter">
+                  <InputLabel>Quantité:</InputLabel>
+                  <Select
+                    value={quantityFilter}
+                    onChange={(e) => setQuantityFilter(e.target.value)}
+                    label="Quantité:"
+                  >
+                    <MenuItem value="all">Tous</MenuItem>
+                    <MenuItem value="zero">Quantité 0</MenuItem>
+                  </Select>
+                </FormControl>
+                <Box className="price-filter">
+                  <Typography variant="body2" className="price-label">
+                    Prix:
+                  </Typography>
+                  <Slider
+                    value={priceRange}
+                    onChange={(_, newValue) => setPriceRange(newValue as [number, number])}
+                    valueLabelDisplay="auto"
+                    min={0}
+                    max={1000}
+                    className="price-slider"
+                  />
+                </Box>
+              </Box>
+              <Button
                 variant="outlined"
                 size="small"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-field"
-              />
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<AddIcon />}
-                onClick={handleAddItem}
-                disabled={loading}
+                startIcon={<ClearIcon />}
+                onClick={clearFilters}
+                className="clear-filters-btn"
               >
-                Ajouter un article
-              </Button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                accept=".xlsx,.xls"
-                style={{ display: 'none' }}
-              />
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<FileUploadIcon />}
-                onClick={() => fileInputRef.current?.click()}
-                disabled={loading}
-              >
-                Importer Excel
+                X Effacer les filtres
               </Button>
             </Box>
           </Box>
 
-          <TableContainer className="items-table-container">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Description</TableCell>
-                  <TableCell align="right">Prix (€)</TableCell>
-                  <TableCell align="right">Quantité</TableCell>
-                  <TableCell align="center">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center">
-                      Chargement...
-                    </TableCell>
-                  </TableRow>
-                ) : filteredItems.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center">
-                      Aucun article trouvé
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        {item.description}
-                        {item.quantity === 0 && (
-                          <Tooltip title="Quantité nulle : veuillez réapprovisionner" placement="right">
-                            <WarningAmberIcon style={{ color: '#FFA000', marginLeft: 8, verticalAlign: 'middle' }} fontSize="small" />
-                          </Tooltip>
-                        )}
-                      </TableCell>
-                      <TableCell align="right">
-                        {item.priceEuro ? Number(item.priceEuro).toFixed(2) : '0.00'}
-                      </TableCell>
-                      <TableCell align="right">
-                        {item.quantity !== undefined && item.quantity !== null ? item.quantity : 0}
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => {
-                            setCurrentItem(item);
-                            setIsEditing(true);
-                            setDialogOpen(true);
-                          }}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeleteItem(item.id)}
-                          disabled={deletingId === item.id}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
-      </Container>
+          {/* Items Table */}
+          <Box className="items-table-section">
+
+            <TableContainer className="items-table-container">
+              <Table>
+                                 <TableHead>
+                   <TableRow>
+                     <TableCell className="table-header">ID</TableCell>
+                     <TableCell className="table-header">DESCRIPTION</TableCell>
+                     <TableCell className="table-header" align="right">PRIX (€)</TableCell>
+                     <TableCell className="table-header" align="right">QUANTITÉ</TableCell>
+                     <TableCell className="table-header" align="center">ACTIONS</TableCell>
+                   </TableRow>
+                 </TableHead>
+                <TableBody>
+                                     {loading ? (
+                     <TableRow>
+                       <TableCell colSpan={5} align="center" className="loading-cell">
+                         Chargement...
+                       </TableCell>
+                     </TableRow>
+                   ) : filteredItems.length === 0 ? (
+                     <TableRow>
+                       <TableCell colSpan={5} align="center" className="empty-cell">
+                         Aucun article trouvé
+                       </TableCell>
+                     </TableRow>
+                  ) : (
+                                         filteredItems.map((item) => (
+                       <TableRow key={item.id} className="table-row">
+                         <TableCell className="id-cell">
+                           {item.id}
+                         </TableCell>
+                         <TableCell className="description-cell">
+                           {item.description}
+                           {item.quantity === 0 && (
+                             <Tooltip title="Quantité nulle : veuillez réapprovisionner" placement="right">
+                               <WarningAmberIcon className="warning-icon" fontSize="small" />
+                             </Tooltip>
+                           )}
+                         </TableCell>
+                         <TableCell align="right" className="price-cell">
+                           {item.priceEuro ? Number(item.priceEuro).toFixed(2) : '0.00'}
+                         </TableCell>
+                         <TableCell align="right" className="quantity-cell">
+                           {item.quantity !== undefined && item.quantity !== null ? item.quantity : 0}
+                         </TableCell>
+                         <TableCell align="center" className="actions-cell">
+                           <IconButton
+                             size="small"
+                             color="primary"
+                             onClick={() => {
+                               setCurrentItem(item);
+                               setIsEditing(true);
+                               setDialogOpen(true);
+                             }}
+                             className="edit-btn"
+                           >
+                             <EditIcon fontSize="small" />
+                           </IconButton>
+                           <IconButton
+                             size="small"
+                             color="error"
+                             onClick={() => handleDeleteItem(item.id)}
+                             disabled={deletingId === item.id}
+                             className="delete-btn"
+                           >
+                             <DeleteIcon fontSize="small" />
+                           </IconButton>
+                         </TableCell>
+                       </TableRow>
+                     ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        </Container>
+      </Box>
 
       {/* Dialog for adding/editing items */}
       <Dialog
