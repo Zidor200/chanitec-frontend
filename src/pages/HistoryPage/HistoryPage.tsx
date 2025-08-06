@@ -223,10 +223,28 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
           alert("Attention : la date de rappel de ce devis est dépassée !");
         }
       }
-      if (quote.confirmed) {
-        onNavigate(`/quote?id=${quoteId}`);
-      } else {
-        onNavigate(`/quote?id=${quoteId}&showConfirm=true`);
+      onNavigate(`/quote?id=${quoteId}&showConfirm=true`);
+    }
+  };
+
+  const handleConfirmQuote = async (quoteId: string) => {
+    if (window.confirm('Êtes-vous sûr de vouloir confirmer ce devis ?')) {
+      try {
+        const quote = quotes.find(q => q.id === quoteId);
+        if (!quote) return;
+
+        // Use the existing confirmQuote API service
+        await apiService.confirmQuote(quoteId, true, quote.number_chanitec || '');
+
+        // Update the local state
+        setQuotes(prev => prev.map(q =>
+          q.id === quoteId ? { ...q, confirmed: true } : q
+        ));
+
+        alert('Devis confirmé avec succès');
+      } catch (error: any) {
+        console.error('Error confirming quote:', error);
+        alert('Erreur lors de la confirmation du devis. Veuillez réessayer.');
       }
     }
   };
@@ -455,6 +473,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                             onChange={value => handleReminderChange(quote.id, value)}
                             min={0}
                             fullWidth={false}
+                            displayAsInteger={true}
                           />
                           <IconButton color="primary" sx={{ ml: 1 }} onClick={() => handleSetReminder(quote.id)}>
                             <AddAlarmIcon />
@@ -466,6 +485,17 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                       <Button className="action-button view" size="small" startIcon={<VisibilityIcon />} onClick={() => handleLoadQuote(quote.id)}>
                         Voir
                       </Button>
+                      {!quote.confirmed && (
+                        <Button
+                          className="action-button"
+                          size="small"
+                          color="success"
+                          startIcon={<CheckCircleOutlineIcon />}
+                          onClick={() => handleConfirmQuote(quote.id)}
+                        >
+                          Confirmer
+                        </Button>
+                      )}
                       {isLatest && (
                         <>
                           <Button className="action-button" size="small" color="primary" startIcon={<ReceiptLongOutlined />} onClick={() => handleViewPriceOffer(quote.id)}>
