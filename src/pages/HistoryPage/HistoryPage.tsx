@@ -250,7 +250,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
     const reminderDate = new Date(currentDate.setDate(currentDate.getDate() + days));
     const formattedDate = reminderDate.toISOString().split('T')[0];
     // Use fetch directly since fetchApi is private
-    await fetch(`http://localhost:5000/api/quotes/${quoteId}/reminder`, {
+    await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/quotes/${quoteId}/reminder`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reminderDate: formattedDate }),

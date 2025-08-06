@@ -59,7 +59,7 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
       // Fetch createdAt for the quoteId
       const fetchAndLoad = async () => {
         try {
-          const allQuotes = await fetch(`http://localhost:5000/api/quotes`).then(res => res.json());
+          const allQuotes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/quotes`).then(res => res.json());
           const found = allQuotes.find((q: any) => q.id === quoteId);
           if (found) {
             loadQuote(quoteId, found.createdAt, fromHistory);

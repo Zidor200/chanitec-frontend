@@ -46,7 +46,6 @@ import { itemsApi } from '../../services/api';
 import './ItemsPage.scss';
 import { v4 as uuidv4 } from 'uuid';
 import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberInput';
-  const API_BASE_URL = 'http://localhost:5000/api';
 
 
 interface ItemsPageProps {

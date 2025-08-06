@@ -299,7 +299,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
           Livraison et pose du Split avec accessoires de raccordement
         </MenuItem>
         <MenuItem value="Fournitures Epa du calorifuger plus accessoires">
-          Fournitures Epa du calorifuger plus accessoires
+          Fournitures du calorifugeur plus accessoires
         </MenuItem>
         <MenuItem value="Fournitures et pose des pièces électriques et frigorifique">
           Fournitures et pose des pièces électriques et frigorifique

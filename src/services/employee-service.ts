@@ -1,7 +1,5 @@
 import axios from 'axios';
 
-const API_URL = `http://localhost:5000/api/employees`;
-
 export interface Employee {
   id: number;
   full_name: string;
