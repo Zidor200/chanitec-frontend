@@ -203,7 +203,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
   }, [filters, quotes, clients, sites]);
 
   // Handlers
-  const handleFilterChange = (field: string, value: string) => {
+  const handleFilterChange = (field: string, value: string | boolean) => {
     setFilters(prev => ({ ...prev, [field]: value }));
   };
   const handleClearFilters = () => {
@@ -250,7 +250,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
     const reminderDate = new Date(currentDate.setDate(currentDate.getDate() + days));
     const formattedDate = reminderDate.toISOString().split('T')[0];
     // Use fetch directly since fetchApi is private
-    await fetch(`${process.env.REACT_APP_API_URL}/quotes/${quoteId}/reminder`, {
+    await fetch(`http://localhost:5000/api/quotes/${quoteId}/reminder`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reminderDate: formattedDate }),
@@ -364,7 +364,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
               control={
                 <Switch
                   checked={filters.showAlertedOnly}
-                  onChange={(e) => handleFilterChange('showAlertedOnly', e.target.checked.toString())}
+                  onChange={(e) => handleFilterChange('showAlertedOnly', e.target.checked)}
                   color="warning"
                 />
               }

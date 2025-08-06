@@ -180,6 +180,7 @@ const LaborSection: React.FC<LaborSectionProps> = ({
               min={1}
               step={1}
               fullWidth
+              displayAsInteger={true}
             />
           </Box>
 
@@ -191,6 +192,7 @@ const LaborSection: React.FC<LaborSectionProps> = ({
               min={1}
               step={1}
               fullWidth
+              displayAsInteger={true}
             />
           </Box>
 

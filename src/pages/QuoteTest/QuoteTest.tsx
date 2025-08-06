@@ -72,7 +72,7 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
             createdAt = currentQuote.createdAt;
           } else {
             try {
-              const allQuotes = await fetch(`${process.env.REACT_APP_API_URL}/quotes`).then(res => res.json());
+              const allQuotes = await fetch(`http://localhost:5000/api/quotes`).then(res => res.json());
               const found = allQuotes.find((q: any) => q.id === quoteId);
               if (found) {
                 createdAt = found.createdAt;
@@ -137,7 +137,7 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
     if (!currentQuote) return;
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/quotes/${currentQuote.id}/confirm`, {
+      const response = await fetch(`http://localhost:5000/api/quotes/${currentQuote.id}/confirm`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

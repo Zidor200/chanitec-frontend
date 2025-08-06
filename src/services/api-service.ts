@@ -1,7 +1,7 @@
 import { Client, Quote, Site, SupplyItem, LaborItem } from '../models/Quote';
 import { PriceOffer } from '../models/PriceOffer';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
 

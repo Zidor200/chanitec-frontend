@@ -55,7 +55,7 @@ import { generateClientId } from '../../utils/id-generator';
 import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberInput';
 import './ClientsPage.scss';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL;
+  const API_BASE_URL = 'http://localhost:5000/api';
 
 interface ClientsPageProps {
   currentPath: string;
@@ -95,6 +95,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
 
   const [originalClientSites, setOriginalClientSites] = useState<Site[]>([]); // Store original sites when editing
   const [deletedSplits, setDeletedSplits] = useState<string[]>([]); // Track split codes to delete
+  const [puissanceInputs, setPuissanceInputs] = useState<{[key: string]: string}>({}); // Store raw input values for puissance fields
 
   // Load clients on component mount
   useEffect(() => {
@@ -409,6 +410,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
     });
     setNewSiteName('');
     setIsEditing(false);
+    setPuissanceInputs({}); // Clear puissance inputs
   };
 
   // Show snackbar with message
@@ -439,6 +441,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
     setIsEditing(true);
     setNewSiteName(''); // Clear new site name field
     setDialogOpen(true);
+    setPuissanceInputs({}); // Clear puissance inputs when editing starts
     handleMenuClose();
   };
 
@@ -594,7 +597,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
                                 {site.splits.map((split, splitIdx) => (
                                   <ListItem key={splitIdx} sx={{ pl: 0 }}>
                                     <ListItemText
-                                      primary={`${split.Code || '-'} : ${split.name || '-'} ${split.puissance ?? '-'} btu/Kw`}
+                                      primary={`${split.Code || '-'} : ${split.name || '-'} ${split.description|| '  '} ${split.puissance ?? '-'} btu/Kw`}
                                       secondary={split.description}
                                     />
                                   </ListItem>
@@ -639,7 +642,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
       </Menu>
 
       {/* Add/Edit Client Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>
           {isEditing ? 'Modifier le client' : 'Nouveau Client'}
         </DialogTitle>
@@ -710,7 +713,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
                 {(site.splits ?? []).map((split, splitIdx) => (
                   <Box key={splitIdx} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
                     <TextField
-                      label="ID"
+                      label="Code"
                       size="small"
                       value={split.Code}
                       onChange={e => {
@@ -728,6 +731,7 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
                       }}
                     />
                     <TextField
+                      select
                       label="Type"
                       size="small"
                       value={split.name}
@@ -744,32 +748,83 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
                         );
                         setCurrentClient({ ...currentClient, sites: newSites });
                       }}
-                    />
+                      sx={{ minWidth: 200 }}
+                    >
+                      <MenuItem value="Split">Split</MenuItem>
+                      <MenuItem value="Ventilo-convecteur">Ventilo-convecteur</MenuItem>
+                      <MenuItem value="Injecto">Injecto</MenuItem>
+                      <MenuItem value="K7 détente direct">K7 détente direct</MenuItem>
+                      <MenuItem value="K7 à eau">K7 à eau</MenuItem>
+                      <MenuItem value="GF">GF</MenuItem>
+                      <MenuItem value="Mini centrale">Mini centrale</MenuItem>
+                      <MenuItem value="Armoire de clim">Armoire de clim</MenuItem>
+                      <MenuItem value="GP">GP</MenuItem>
+                      <MenuItem value="ROOFTOP">ROOFTOP</MenuItem>
+                      <MenuItem value="Split Gainable">Split Gainable</MenuItem>
+                    </TextField>
                     <TextField
-                      select
-                      label="Puissance"
+                      label="Marque"
                       size="small"
-                      value={split.puissance || ''}
+                      value={split.description}
                       onChange={e => {
                         const newSites = (currentClient.sites || []).map((s, idx) =>
                           idx === siteIdx
                             ? {
                                 ...s,
                                 splits: (s.splits ?? []).map((sp, spIdx) =>
-                                  spIdx === splitIdx ? { ...sp, puissance: Number(e.target.value) } : sp
+                                  spIdx === splitIdx ? { ...sp, description: e.target.value } : sp
                                 )
                               }
                             : s
                         );
                         setCurrentClient({ ...currentClient, sites: newSites });
                       }}
-                      sx={{ minWidth: 120 }}
-                    >
-                      <MenuItem value={9000}>9000</MenuItem>
-                      <MenuItem value={12000}>12000</MenuItem>
-                      <MenuItem value={18000}>18000</MenuItem>
-                      <MenuItem value={24000}>24000</MenuItem>
-                    </TextField>
+                      sx={{ minWidth: 200 }}
+                    />
+                                        <TextField
+
+                      label="Puissance en BTU/Kw "
+                      size="small"
+                      value={puissanceInputs[`${site.id}-${splitIdx}`] ?? (split.puissance || '')}
+                      onChange={e => {
+                        const value = e.target.value;
+                        const inputKey = `${site.id}-${splitIdx}`;
+
+                        // Update the raw input state
+                        setPuissanceInputs(prev => ({
+                          ...prev,
+                          [inputKey]: value
+                        }));
+
+                        // Only update the actual split data if it's a valid number
+                        if (value === '' || !isNaN(parseFloat(value))) {
+                          const newSites = (currentClient.sites || []).map((s, idx) =>
+                            idx === siteIdx
+                              ? {
+                                  ...s,
+                                  splits: (s.splits ?? []).map((sp, spIdx) =>
+                                    spIdx === splitIdx ? { ...sp, puissance: value === '' ? 0 : parseFloat(value) || 0 } : sp
+                                  )
+                                }
+                              : s
+                          );
+                          setCurrentClient({ ...currentClient, sites: newSites });
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const value = e.target.value;
+                        const inputKey = `${site.id}-${splitIdx}`;
+
+                        // On blur, ensure we have a valid number
+                        if (value === '' || isNaN(parseFloat(value))) {
+                          setPuissanceInputs(prev => ({
+                            ...prev,
+                            [inputKey]: String(split.puissance || '')
+                          }));
+                        }
+                      }}
+                      sx={{ minWidth: 180 }}
+                    />
                     <IconButton
                       size="small"
                       onClick={() => {

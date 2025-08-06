@@ -66,7 +66,8 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
   const [filteredItems, setFilteredItems] = useState<SupplyItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<SupplyItem | null>(null);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number>(1);
+  const [quantityInputValue, setQuantityInputValue] = useState<string>('1');
   const [customPriceDialogOpen, setCustomPriceDialogOpen] = useState(false);
   const [customPrice, setCustomPrice] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -74,6 +75,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
   const [editingItem, setEditingItem] = useState<SupplyItem | null>(null);
   const [editPrice, setEditPrice] = useState<number>(0);
   const [editQuantity, setEditQuantity] = useState<number>(1);
+  const [editQuantityInputValue, setEditQuantityInputValue] = useState<string>('1');
   const [quantityWarningDialogOpen, setQuantityWarningDialogOpen] = useState(false);
   const [pendingItem, setPendingItem] = useState<SupplyItem | null>(null);
   const [pendingQuantity, setPendingQuantity] = useState<number>(1);
@@ -116,7 +118,8 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
       setFilteredItems(catalogItems);
     } else {
       const filtered = catalogItems.filter(item =>
-        item.description.toLowerCase().includes(searchTerm.toLowerCase())
+        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.id.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredItems(filtered);
     }
@@ -144,6 +147,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
     setSearchTerm('');
     setSelectedItem(null);
     setQuantity(1);
+    setQuantityInputValue('1');
   };
 
   // Handle closing the search dialog
@@ -172,7 +176,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
       const calculatedItem = calculateSupplyItemTotal(itemWithCustomPrice, exchangeRate, marginRate);
       onAddItem({
         description: calculatedItem.description,
-        quantity: quantity,
+        quantity: Math.round(quantity), // Ensure quantity is an integer
         priceEuro: calculatedItem.priceEuro,
         priceDollar: calculatedItem.priceDollar,
         unitPriceDollar: calculatedItem.unitPriceDollar,
@@ -203,7 +207,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
     const calculatedItem = calculateSupplyItemTotal(item, exchangeRate, marginRate);
     onAddItem({
       description: calculatedItem.description,
-      quantity: qty,
+      quantity: Math.round(qty), // Ensure quantity is an integer
       priceEuro: calculatedItem.priceEuro,
       priceDollar: calculatedItem.priceDollar,
       unitPriceDollar: calculatedItem.unitPriceDollar,
@@ -233,6 +237,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
     setEditingItem(item);
     setEditPrice(item.priceEuro);
     setEditQuantity(item.quantity);
+    setEditQuantityInputValue(item.quantity.toString());
     setEditPriceDialogOpen(true);
   };
 
@@ -241,6 +246,19 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
     setEditingItem(null);
     setEditPrice(0);
     setEditQuantity(1);
+    setEditQuantityInputValue('1');
+  };
+
+    // Handle quantity input change for search dialog
+  const handleQuantityInputChange = (value: number) => {
+    setQuantity(value);
+    setQuantityInputValue(value.toString());
+  };
+
+  // Handle edit quantity input change
+  const handleEditQuantityInputChange = (value: number) => {
+    setEditQuantity(value);
+    setEditQuantityInputValue(value.toString());
   };
 
   const handleUpdatePrice = () => {
@@ -248,7 +266,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
       const updatedItem = {
         ...editingItem,
         priceEuro: editPrice,
-        quantity: editQuantity
+        quantity: Math.round(editQuantity) // Ensure quantity is an integer
       };
       onUpdateSupplyItem(updatedItem);
       handleCloseEditPriceDialog();
@@ -359,7 +377,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
                 <TableRow key={item.id}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>{item.description}</TableCell>
-                  <TableCell align="right">{item.quantity}</TableCell>
+                  <TableCell align="right">{Math.round(item.quantity)}</TableCell>
                   <TableCell align="right">{Number(item.priceEuro || 0).toFixed(2)}</TableCell>
                   <TableCell align="right">{Number(item.priceDollar || 0).toFixed(2)}</TableCell>
                   <TableCell align="right">{Number(item.unitPriceDollar || 0).toFixed(2)}</TableCell>
@@ -408,7 +426,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
           <Box className="search-container">
             <TextField
               fullWidth
-              label="Rechercher un article"
+              label="Rechercher un article (nom ou ID)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               variant="outlined"
@@ -451,7 +469,7 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
                            )}
                          </Box>
                        </TableCell>
-                       <TableCell align="right">{item.quantity}</TableCell>
+                       <TableCell align="right">{Math.round(item.quantity)}</TableCell>
                        <TableCell align="right">{Number(item.priceEuro || 0).toFixed(2)}</TableCell>
                       <TableCell align="center">
                         <Button
@@ -475,15 +493,16 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
               <Typography variant="subtitle1">
                 Article sélectionné: {selectedItem.description}
               </Typography>
-              <CustomNumberInput
-                label="Quantité"
-                value={quantity}
-                onChange={setQuantity}
-                min={1}
-                step={1}
-                fullWidth
-                margin="normal"
-              />
+                             <CustomNumberInput
+                 label="Quantité"
+                 value={quantity}
+                 onChange={handleQuantityInputChange}
+                 min={1}
+                 step={1}
+                 fullWidth
+                 margin="normal"
+                 displayAsInteger={true}
+               />
             </Box>
           )}
         </DialogContent>
@@ -561,15 +580,16 @@ const SuppliesSection: React.FC<SuppliesSectionProps> = ({
             fullWidth
             margin="normal"
           />
-          <CustomNumberInput
-            label="Quantité"
-            value={editQuantity}
-            onChange={setEditQuantity}
-            min={1}
-            step={1}
-            fullWidth
-            margin="normal"
-          />
+                     <CustomNumberInput
+             label="Quantité"
+             value={editQuantity}
+             onChange={handleEditQuantityInputChange}
+             min={1}
+             step={1}
+             fullWidth
+             margin="normal"
+             displayAsInteger={true}
+           />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseEditPriceDialog} color="primary">
