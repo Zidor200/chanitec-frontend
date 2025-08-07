@@ -1,0 +1,410 @@
+# Quote Confirmation Frontend Implementation Guide
+
+## Overview
+This document provides all necessary information for implementing quote confirmation functionality in the frontend application.
+
+## API Endpoints
+
+### 1. Confirm Quote
+**Endpoint:** `PATCH /api/quotes/:id/confirm`
+
+**Purpose:** Mark a quote as confirmed and assign an internal reference number
+
+**Request:**
+```javascript
+const confirmQuote = async (quoteId, confirmed, numberChanitec) => {
+  const response = await fetch(`/api/quotes/${quoteId}/confirm`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      confirmed: confirmed,        // boolean: true/false
+      number_chanitec: numberChanitec  // string: internal reference number
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to confirm quote');
+  }
+
+  return response.json();
+};
+```
+
+**Request Body Schema:**
+```json
+{
+  "confirmed": true,              // Required: boolean
+  "number_chanitec": "CH-2024-001"  // Required: string
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "Quote confirmation status and number_chanitec updated successfully"
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid data types or missing required fields
+- `404 Not Found`: Quote doesn't exist
+- `500 Internal Server Error`: Server error
+
+### 2. Set Reminder Date
+**Endpoint:** `PATCH /api/quotes/:id/reminder`
+
+**Purpose:** Set or update a reminder date for quote follow-up
+
+**Request:**
+```javascript
+const setReminderDate = async (quoteId, reminderDate) => {
+  const response = await fetch(`/api/quotes/${quoteId}/reminder`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      reminderDate: reminderDate  // string: "YYYY-MM-DD" format
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to set reminder date');
+  }
+
+  return response.json();
+};
+```
+
+**Request Body Schema:**
+```json
+{
+  "reminderDate": "2024-12-31"  // Required: ISO date string
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "id": "uuid",
+  "client_name": "Client Name",
+  "site_name": "Site Name",
+  "object": "Project Object",
+  "date": "2024-01-15",
+  "supply_description": "Supply description",
+  "labor_description": "Labor description",
+  "supply_exchange_rate": 1.15,
+  "supply_margin_rate": 1.20,
+  "labor_exchange_rate": 1.15,
+  "labor_margin_rate": 1.25,
+  "total_supplies_ht": 1000.00,
+  "total_labor_ht": 500.00,
+  "total_ht": 1500.00,
+  "tva": 300.00,
+  "total_ttc": 1800.00,
+  "confirmed": false,
+  "reminderDate": "2024-12-31",
+  "parentId": 0,
+  "created_at": "2024-01-15T10:00:00Z",
+  "updated_at": "2024-01-15T10:00:00Z"
+}
+```
+
+## Quote Data Structure
+
+### Quote Object Fields
+When fetching quotes (GET `/api/quotes` or GET `/api/quotes/:id`), each quote includes:
+
+```javascript
+{
+  id: "uuid",                    // Quote unique identifier
+  clientName: "Client Name",     // Client name
+  siteName: "Site Name",         // Site name
+  object: "Project Object",      // Project description
+  date: "2024-01-15",           // Quote date
+  reminderDate: "2024-12-31",   // Optional reminder date
+  confirmed: false,              // Confirmation status
+  number_chanitec: null,         // Internal reference number (when confirmed)
+  supplyDescription: "...",      // Supply description
+  laborDescription: "...",       // Labor description
+  supplyExchangeRate: 1.15,      // Supply exchange rate
+  supplyMarginRate: 1.20,        // Supply margin rate
+  laborExchangeRate: 1.15,       // Labor exchange rate
+  laborMarginRate: 1.25,         // Labor margin rate
+  totalSuppliesHT: 1000.00,      // Total supplies before tax
+  totalLaborHT: 500.00,          // Total labor before tax
+  totalHT: 1500.00,              // Total before tax
+  tva: 300.00,                   // Tax amount
+  totalTTC: 1800.00,             // Total with tax
+  remise: 0.00,                  // Discount amount
+  parentId: 0,                   // Parent quote ID
+  createdAt: "2024-01-15T10:00:00Z",
+  updatedAt: "2024-01-15T10:00:00Z",
+  splitId: null,                 // Split ID if applicable
+  supplyItems: [...],            // Array of supply items
+  laborItems: [...]              // Array of labor items
+}
+```
+
+## Frontend Implementation Examples
+
+### 1. Quote Confirmation Modal/Form
+```javascript
+const QuoteConfirmationModal = ({ quote, onConfirm, onClose }) => {
+  const [confirmed, setConfirmed] = useState(false);
+  const [numberChanitec, setNumberChanitec] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      await confirmQuote(quote.id, confirmed, numberChanitec);
+      onConfirm();
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal">
+      <form onSubmit={handleSubmit}>
+        <h3>Confirm Quote</h3>
+
+        <div>
+          <label>
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(e) => setConfirmed(e.target.checked)}
+            />
+            Mark as confirmed
+          </label>
+        </div>
+
+        {confirmed && (
+          <div>
+            <label>
+              Internal Reference Number:
+              <input
+                type="text"
+                value={numberChanitec}
+                onChange={(e) => setNumberChanitec(e.target.value)}
+                placeholder="e.g., CH-2024-001"
+                required
+              />
+            </label>
+          </div>
+        )}
+
+        {error && <div className="error">{error}</div>}
+
+        <button type="submit" disabled={loading}>
+          {loading ? 'Confirming...' : 'Confirm Quote'}
+        </button>
+        <button type="button" onClick={onClose}>
+          Cancel
+        </button>
+      </form>
+    </div>
+  );
+};
+```
+
+### 2. Quote List with Confirmation Status
+```javascript
+const QuoteList = () => {
+  const [quotes, setQuotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchQuotes();
+  }, []);
+
+  const fetchQuotes = async () => {
+    try {
+      const response = await fetch('/api/quotes');
+      const data = await response.json();
+      setQuotes(data);
+    } catch (error) {
+      console.error('Error fetching quotes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getConfirmationStatus = (quote) => {
+    if (quote.confirmed) {
+      return (
+        <span className="status confirmed">
+          ✓ Confirmed ({quote.number_chanitec})
+        </span>
+      );
+    }
+    return <span className="status pending">Pending</span>;
+  };
+
+  return (
+    <div className="quote-list">
+      {quotes.map(quote => (
+        <div key={quote.id} className="quote-item">
+          <div className="quote-header">
+            <h4>{quote.clientName} - {quote.siteName}</h4>
+            {getConfirmationStatus(quote)}
+          </div>
+          <div className="quote-details">
+            <p>Object: {quote.object}</p>
+            <p>Date: {quote.date}</p>
+            <p>Total: ${quote.totalTTC}</p>
+            {quote.reminderDate && (
+              <p>Reminder: {quote.reminderDate}</p>
+            )}
+          </div>
+          {!quote.confirmed && (
+            <button onClick={() => openConfirmationModal(quote)}>
+              Confirm Quote
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+```
+
+### 3. Reminder Date Picker
+```javascript
+const ReminderDatePicker = ({ quote, onUpdate }) => {
+  const [reminderDate, setReminderDate] = useState(quote.reminderDate || '');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      await setReminderDate(quote.id, reminderDate);
+      onUpdate();
+    } catch (error) {
+      console.error('Error setting reminder date:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label>
+        Reminder Date:
+        <input
+          type="date"
+          value={reminderDate}
+          onChange={(e) => setReminderDate(e.target.value)}
+        />
+      </label>
+      <button type="submit" disabled={loading}>
+        {loading ? 'Setting...' : 'Set Reminder'}
+      </button>
+    </form>
+  );
+};
+```
+
+## Validation Rules
+
+### Quote Confirmation
+- `confirmed` must be a boolean (true/false)
+- `number_chanitec` is required when `confirmed` is true
+- `number_chanitec` must be a non-empty string
+- Recommended format: "CH-YYYY-NNN" (e.g., "CH-2024-001")
+
+### Reminder Date
+- `reminderDate` must be a valid ISO date string (YYYY-MM-DD)
+- Date must be in the future (recommended validation)
+- Can be null/empty to remove reminder
+
+## Error Handling
+
+### Common Error Scenarios
+1. **Invalid Data Types**
+   - `confirmed` is not boolean
+   - `number_chanitec` is not string
+   - `reminderDate` is not valid date format
+
+2. **Missing Required Fields**
+   - `number_chanitec` missing when confirming
+   - `reminderDate` missing when setting reminder
+
+3. **Quote Not Found**
+   - Invalid quote ID
+   - Quote already deleted
+
+### Error Response Handling
+```javascript
+const handleApiError = (response) => {
+  if (response.status === 400) {
+    return 'Invalid data provided. Please check your input.';
+  } else if (response.status === 404) {
+    return 'Quote not found.';
+  } else if (response.status === 500) {
+    return 'Server error. Please try again later.';
+  }
+  return 'An unexpected error occurred.';
+};
+```
+
+## UI/UX Recommendations
+
+### Confirmation Status Indicators
+- **Confirmed:** Green checkmark with reference number
+- **Pending:** Gray or orange indicator
+- **With Reminder:** Calendar icon with date
+
+### Form Validation
+- Real-time validation for reference number format
+- Date picker for reminder dates
+- Clear error messages
+- Loading states during API calls
+
+### User Experience
+- Confirmation should be a deliberate action (modal/confirmation dialog)
+- Show confirmation status prominently in quote lists
+- Allow easy access to set/update reminder dates
+- Provide clear feedback for all actions
+
+## Testing Checklist
+
+### Quote Confirmation
+- [ ] Confirm unconfirmed quote
+- [ ] Validate required fields
+- [ ] Handle API errors
+- [ ] Update UI after confirmation
+- [ ] Show confirmation status
+
+### Reminder Date
+- [ ] Set reminder date
+- [ ] Update existing reminder
+- [ ] Remove reminder (set to null)
+- [ ] Validate date format
+- [ ] Handle invalid dates
+
+### Integration
+- [ ] Quote list updates after confirmation
+- [ ] Search/filter by confirmation status
+- [ ] Export confirmed quotes
+- [ ] Bulk operations (if applicable)
+
+## Notes
+- Quote confirmation is irreversible (no unconfirm endpoint)
+- Reference numbers should be unique (frontend validation recommended)
+- Reminder dates are optional and can be updated
+- All timestamps are in ISO format
+- Consider implementing optimistic updates for better UX

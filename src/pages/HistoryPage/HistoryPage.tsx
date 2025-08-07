@@ -14,7 +14,12 @@ import {
   IconButton,
   Divider,
   FormControlLabel,
-  Switch
+  Switch,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -34,6 +39,139 @@ interface HistoryPageProps {
   currentPath: string;
   onNavigate: (path: string, quoteId?: string) => void;
 }
+
+// Quote Confirmation Modal Component
+interface QuoteConfirmationModalProps {
+  open: boolean;
+  quote: Quote | null;
+  onConfirm: (quoteId: string, confirmed: boolean, numberChanitec: string) => Promise<void>;
+  onClose: () => void;
+}
+
+const QuoteConfirmationModal: React.FC<QuoteConfirmationModalProps> = ({
+  open,
+  quote,
+  onConfirm,
+  onClose
+}) => {
+  const [confirmed, setConfirmed] = useState(false);
+  const [numberChanitec, setNumberChanitec] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (open) {
+      setConfirmed(false);
+      setNumberChanitec('');
+      setError('');
+    }
+  }, [open]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quote) return;
+
+    if (confirmed && !numberChanitec.trim()) {
+      setError('Le numéro de référence interne est requis pour confirmer le devis.');
+      return;
+    }
+
+    // Validate reference number format if provided
+    if (confirmed && numberChanitec.trim()) {
+      const referencePattern = /^CH-\d{4}-\d{3}$/;
+      if (!referencePattern.test(numberChanitec.trim())) {
+        setError('Le format du numéro de référence doit être CH-YYYY-NNN (ex: CH-2024-001)');
+        return;
+      }
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      await onConfirm(quote.id, confirmed, numberChanitec.trim());
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de la confirmation du devis');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (!loading) {
+      onClose();
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Confirmer le devis</DialogTitle>
+      <form onSubmit={handleSubmit}>
+        <DialogContent>
+          {quote && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Client: {quote.clientName}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Site: {quote.siteName}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Total TTC: {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(quote.totalTTC)}
+              </Typography>
+            </Box>
+          )}
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={confirmed}
+                onChange={(e) => setConfirmed(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Marquer comme confirmé"
+            sx={{ mb: 2 }}
+          />
+
+          {confirmed && (
+            <TextField
+              fullWidth
+              label="Numéro de référence interne"
+              value={numberChanitec}
+              onChange={(e) => setNumberChanitec(e.target.value)}
+              placeholder="ex: CH-2024-001"
+              required
+              helperText="Format recommandé: CH-YYYY-NNN"
+              sx={{ mb: 2 }}
+            />
+          )}
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose} disabled={loading}>
+            Annuler
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            disabled={loading}
+          >
+            {loading ? 'Confirmation...' : 'Confirmer le devis'}
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
+  );
+};
 
 const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) => {
   // Filter state
@@ -71,6 +209,15 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
 
   // Local state for reminder days per quote
   const [reminderDays, setReminderDays] = useState<{ [quoteId: string]: number }>({});
+
+  // Add state for confirmation modal
+  const [confirmationModal, setConfirmationModal] = useState<{
+    open: boolean;
+    quote: Quote | null;
+  }>({
+    open: false,
+    quote: null
+  });
 
   // Fetch clients, sites, and quotes on mount
   useEffect(() => {
@@ -227,27 +374,42 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
     }
   };
 
-  const handleConfirmQuote = async (quoteId: string) => {
-    if (window.confirm('Êtes-vous sûr de vouloir confirmer ce devis ?')) {
-      try {
-        const quote = quotes.find(q => q.id === quoteId);
-        if (!quote) return;
+  // Update the handleConfirmQuote function
+  const handleConfirmQuote = (quote: Quote) => {
+    setConfirmationModal({
+      open: true,
+      quote: quote
+    });
+  };
 
-        // Use the existing confirmQuote API service
-        await apiService.confirmQuote(quoteId, true, quote.number_chanitec || '');
+  // New function to handle the actual confirmation
+  const handleConfirmQuoteSubmit = async (quoteId: string, confirmed: boolean, numberChanitec: string) => {
+    try {
+      await apiService.confirmQuote(quoteId, confirmed, numberChanitec);
 
-        // Update the local state
-        setQuotes(prev => prev.map(q =>
-          q.id === quoteId ? { ...q, confirmed: true } : q
-        ));
+      // Update the local state
+      setQuotes(prev => prev.map(q =>
+        q.id === quoteId ? {
+          ...q,
+          confirmed: confirmed,
+          number_chanitec: confirmed ? numberChanitec : q.number_chanitec
+        } : q
+      ));
 
-        alert('Devis confirmé avec succès');
-      } catch (error: any) {
-        console.error('Error confirming quote:', error);
-        alert('Erreur lors de la confirmation du devis. Veuillez réessayer.');
-      }
+      alert('Devis confirmé avec succès');
+    } catch (error: any) {
+      console.error('Error confirming quote:', error);
+      throw new Error('Erreur lors de la confirmation du devis. Veuillez réessayer.');
     }
   };
+
+  const handleCloseConfirmationModal = () => {
+    setConfirmationModal({
+      open: false,
+      quote: null
+    });
+  };
+
   const handleDeleteQuote = async (quoteId: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce devis ?')) {
       // Call backend to delete by id only
@@ -267,14 +429,15 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
     const currentDate = new Date();
     const reminderDate = new Date(currentDate.setDate(currentDate.getDate() + days));
     const formattedDate = reminderDate.toISOString().split('T')[0];
-    // Use fetch directly since fetchApi is private
-    await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/quotes/${quoteId}/reminder`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reminderDate: formattedDate }),
-    });
-    setQuotes(prev => prev.map(q => q.id === quoteId ? { ...q, reminderDate: formattedDate } : q));
-    alert('Rappel configuré avec succès');
+    
+    try {
+      const updatedQuote = await apiService.setReminderDate(quoteId, formattedDate);
+      setQuotes(prev => prev.map(q => q.id === quoteId ? { ...q, reminderDate: formattedDate } : q));
+      alert('Rappel configuré avec succès');
+    } catch (error: any) {
+      console.error('Error setting reminder date:', error);
+      alert('Erreur lors de la configuration du rappel. Veuillez réessayer.');
+    }
   };
 
   return (
@@ -413,7 +576,24 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                         </Typography>
                         {/* Check icon for confirmed status */}
                         {quote.confirmed ? (
-                          <CheckCircleIcon sx={{ color: '#4caf50', ml: 1 }} titleAccess="Confirmé" />
+                          <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
+                            <CheckCircleIcon sx={{ color: '#4caf50' }} titleAccess="Confirmé" />
+                            {quote.number_chanitec && (
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  ml: 0.5,
+                                  color: '#4caf50',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#e8f5e8',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px'
+                                }}
+                              >
+                                {quote.number_chanitec}
+                              </Typography>
+                            )}
+                          </Box>
                         ) : (
                           <CheckCircleOutlineIcon sx={{ color: '#bdbdbd', ml: 1 }} titleAccess="Non confirmé" />
                         )}
@@ -491,7 +671,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                           size="small"
                           color="success"
                           startIcon={<CheckCircleOutlineIcon />}
-                          onClick={() => handleConfirmQuote(quote.id)}
+                          onClick={() => handleConfirmQuote(quote)}
                         >
                           Confirmer
                         </Button>
@@ -513,6 +693,12 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
             </Box>
           ))}
         </Box>
+        <QuoteConfirmationModal
+          open={confirmationModal.open}
+          quote={confirmationModal.quote}
+          onConfirm={handleConfirmQuoteSubmit}
+          onClose={handleCloseConfirmationModal}
+        />
       </Container>
     </Layout>
   );

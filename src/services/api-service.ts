@@ -222,6 +222,20 @@ class ApiService {
         });
     }
 
+    // Set reminder date for a quote
+    /**
+     * Set or update a reminder date for quote follow-up.
+     * @param id Quote ID
+     * @param reminderDate String in "YYYY-MM-DD" format
+     * @returns Quote object with updated reminder date
+     */
+    async setReminderDate(id: string, reminderDate: string): Promise<Quote> {
+        return this.fetchApi<Quote>(`/quotes/${id}/reminder`, {
+            method: 'PATCH',
+            body: JSON.stringify({ reminderDate }),
+        });
+    }
+
     // Exchange Rate
     async getExchangeRate(base: string = 'EUR', target: string = 'USD'): Promise<number> {
         const API_KEY = '8d8220c1bc4f1aa5e98ff382';
