@@ -1,91 +1,228 @@
 .layout-root {
   display: flex;
-  flex-direction: column;
   min-height: 100vh;
+  background-color: #f5f5f5;
+}
 
-  .app-bar {
-    background-color: #1976d2;
+// Mobile App Bar
+.mobile-app-bar {
+  background-color: #1976d2;
+  color: white;
 
-    @media print {
-      display: none !important;
-    }
+  .MuiToolbar-root {
+    min-height: 56px;
+  }
+}
 
-    .toolbar-content {
-      display: flex;
-      width: 100%;
-      align-items: center;
-      justify-content: space-between;
+// Mobile Toolbar Spacer
+.mobile-toolbar-spacer {
+  height: 56px; // Same height as mobile app bar
+}
 
-      .main-menu-button {
-        margin-right: 2rem;
-        font-weight: 500;
-        text-transform: none;
-        color: white;
-        border-right: 1px solid rgba(255, 255, 255, 0.3);
-        padding-right: 1rem;
-      }
-
-      .logo-container {
-        display: flex;
-        align-items: center;
-        position: absolute;
-        left: 16px;
-
-        .header-logo {
-          height: 60px;
-          margin-right: 1rem;
-        }
-      }
-
-      .nav-links {
-        display: flex;
-        margin: 0 auto;
-        justify-content: center;
-
-        @media (max-width: 768px) {
-          flex-direction: column;
-          align-items: center;
-        }
-
-        .nav-button {
-          margin: 0 0.5rem;
-          font-weight: 500;
-          text-transform: none;
-          color: white;
-
-          @media (max-width: 768px) {
-            margin: 0.25rem 0;
-          }
-
-          &.active {
-            font-weight: 700;
-            text-decoration: underline;
-          }
-        }
-      }
-
-      .logout-button {
-        margin-left: auto;
-        font-weight: 500;
-        text-transform: none;
-        color: white;
-        border-left: 1px solid rgba(255, 255, 255, 0.3);
-        padding-left: 1rem;
-      }
-    }
+// Sidebar
+.dashboard-sidebar {
+  .sidebar-paper {
+    width: 280px;
+    background-color: white;
+    border-right: 1px solid #e0e0e0;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
   }
 
-  .main-content {
-    flex-grow: 1;
+  .sidebar-header {
     padding: 2rem 1rem;
-    background-color: #f5f5f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+
+    .sidebar-logo {
+      height: 80px;
+      width: auto;
+    }
   }
 
-  .footer {
-    padding: 1.5rem;
+  .sidebar-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-menu {
+    padding: 1rem 0;
+    flex: 1;
+    overflow: hidden;
+
+    .sidebar-menu-item {
+      margin: 0.25rem 1rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #f0f7ff;
+      }
+
+      &.active {
+        background-color: #1976d2;
+        color: white;
+
+        .menu-item-icon {
+          color: white;
+        }
+
+        .menu-item-text {
+          color: white;
+        }
+
+        &:hover {
+          background-color: #1565c0;
+        }
+      }
+
+      .menu-item-icon {
+        color: #666;
+        margin-right: 0.5rem;
+      }
+
+      .menu-item-text {
+        font-weight: 500;
+        color: #333;
+      }
+    }
+  }
+
+  .sidebar-footer {
     margin-top: auto;
-    background-color: #f5f5f5;
-    border-top: 1px solid #e0e0e0;
+    padding-bottom: 1rem;
+
+    .sidebar-menu-item {
+      margin: 0.25rem 1rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #ffebee;
+      }
+
+      &.logout-item {
+        .menu-item-icon {
+          color: #d32f2f;
+        }
+
+        .menu-item-text {
+          color: #d32f2f;
+        }
+      }
+
+      .menu-item-icon {
+        color: #666;
+        margin-right: 0.5rem;
+      }
+
+      .menu-item-text {
+        font-weight: 500;
+        color: #333;
+      }
+    }
+  }
+
+  .sidebar-divider {
+    margin: 1rem;
+    background-color: #e0e0e0;
+  }
+}
+
+// Mobile Sidebar
+.mobile-sidebar {
+  .MuiDrawer-paper {
+    background-color: white;
+    border-right: 1px solid #e0e0e0;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  }
+
+  // Mobile-specific adjustments when logo is hidden
+  .sidebar-content {
+    padding-top: 1rem; // Add top padding since logo is hidden
+  }
+
+  // Mobile sidebar header adjustments
+  .sidebar-header {
+    @media (max-width: 768px) {
+      display: none; // Ensure logo is hidden on mobile
+    }
+  }
+}
+
+// Main Content
+.dashboard-main {
+  flex-grow: 1;
+  margin-left: 280px; // Sidebar width
+  transition: margin-left 0.3s ease;
+  width: calc(100vw - 280px); // Ensure main content takes remaining width
+  overflow-x: hidden; // Prevent horizontal scrolling
+
+  &.mobile-main {
+    margin-left: 0;
+    width: 100vw;
+  }
+
+  .dashboard-content {
+    padding: 0;
+    min-height: 100vh;
+    width: 100%;
+    max-width: 100%; // Ensure content doesn't exceed container width
+    overflow-x: hidden; // Prevent horizontal scrolling
+    padding-left: 10%;
+    padding-right: 10%;
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .dashboard-sidebar {
+    .sidebar-paper {
+      width: 240px;
+    }
+  }
+
+  .dashboard-main {
+    margin-left: 240px;
+    width: calc(100vw - 240px); // Adjust width for smaller sidebar
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-main {
+    margin-left: 0 !important;
+    width: 100vw; // Full width on mobile
+
+    .dashboard-content {
+      padding-left: 5%;
+      padding-right: 5%;
+    }
+  }
+
+  .dashboard-sidebar {
+    .sidebar-paper {
+      width: 100vw;
+    }
+  }
+}
+
+// Mobile-specific optimizations
+@media (max-width: 480px) {
+  .dashboard-main {
+    .dashboard-content {
+      padding-left: 2%;
+      padding-right: 2%;
+    }
+  }
+
+  .sidebar-paper {
+    width: 100vw !important;
   }
 }
 
@@ -96,17 +233,15 @@
     display: flex !important;
     flex-direction: column !important;
 
-    .app-bar {
+    .dashboard-sidebar {
       display: none !important;
     }
 
-    .main-content {
+    .dashboard-main {
+      margin-left: 0 !important;
+      width: 100% !important;
       background-color: transparent;
       transform: none;
-    }
-
-    .footer {
-      display: none;
     }
   }
 }

@@ -72,7 +72,7 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
             createdAt = currentQuote.createdAt;
           } else {
             try {
-              const allQuotes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/quotes`).then(res => res.json());
+              const allQuotes = await fetch(`${process.env.REACT_APP_API_URL}/quotes`).then(res => res.json());
               const found = allQuotes.find((q: any) => q.id === quoteId);
               if (found) {
                 createdAt = found.createdAt;
@@ -137,7 +137,7 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
     if (!currentQuote) return;
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/quotes/${currentQuote.id}/confirm`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/quotes/${currentQuote.id}/confirm`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -303,11 +303,10 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
 
   return (
     <Layout currentPath={currentPath} onNavigate={onNavigate} onHomeClick={handleHomeClick}>
-      <div ref={contentRef} className={isPdfMode ? 'is-pdf-mode' : ''}>
+      <div ref={contentRef} className={`quote-test-content ${isPdfMode ? 'is-pdf-mode' : ''}`}>
         {/* Background Logo */}
         <img src={logo512} alt="Background Logo" className="background-logo" />
-        {/* Second Background Logo */}
-        <img src={CHANitec} alt="CHANitec Logo" className="background-logo-second" />
+        <img src={CHANitec} alt="Chanitec Logo" className="background-logo-second" />
 
         {/* Header Section */}
         <div className="reference-header">
@@ -384,7 +383,7 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
           <label>Tx de chg:</label>
           <span> {currentQuote.supplyExchangeRate || 1.15}</span>
           <label>Tx de marge:</label>
-          <span>{(Number(currentQuote.supplyMarginRate) || 0.75).toFixed(2)}</span>
+          <span>{currentQuote.supplyMarginRate || 0.75}</span>
         </div>
 
         </div>
@@ -427,7 +426,7 @@ const QuoteTest: React.FC<QuoteTestProps> = ({ currentPath, onNavigate }) => {
           <label>Tx de chg:</label>
           <span>{currentQuote.laborExchangeRate || 1.2}</span>
           <label>Tx de marge:</label>
-          <span>{(Number(currentQuote.laborMarginRate) || 0.8).toFixed(2)}</span>
+          <span>{currentQuote.laborMarginRate || 0.8}</span>
           </div>
         </div>
 

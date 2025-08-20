@@ -155,21 +155,7 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
 
   return (
     <Layout currentPath={currentPath} onNavigate={onNavigate} onLogout={onLogout} onHomeClick={handleHomeClick}>
-      <Box sx={{ display: 'flex', position: 'relative', width: '100%' , backgroundColor: 'white' , color: 'black',height:'20%'}} className="page-header">
-        <Box sx={{ position: 'absolute', left: 0 }}>
-          <img
-            src={logo}
-            alt="Logo"
-            style={{ height: '60px' }}
-          />
-        </Box>
-        <Box sx={{  }}>
-          <Typography variant="h6" component="h1" className="page-title">
-            CALCUL DE PRIX OFFRE CLIMATISATION
-          </Typography>
 
-        </Box>
-      </Box>
       <Container ref={contentRef} className="quote-content">
         <QuoteHeader
           quoteId={currentQuote.id}
@@ -268,8 +254,12 @@ const QuotePage: React.FC<QuotePageProps> = ({ currentPath, onNavigate, onLogout
         siteName={currentQuote.siteName}
         date={currentQuote.date}
         isExistingQuote={isExistingQuote}
-        onSave={saveQuote}
-        onUpdate={updateQuote}
+        onSave={async (remiseValue?: number) => {
+          return saveQuote(remiseValue);
+        }}
+        onUpdate={async (remiseValue?: number) => {
+          return updateQuote(remiseValue);
+        }}
         onViewHistory={() => onNavigate('/history')}
         contentRef={contentRef}
         onPrint={() => onNavigate(`/quote-test?id=${currentQuote.id}`)}

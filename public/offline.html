@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chanitec - Hors ligne</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .offline-container {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .offline-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0 0 20px 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        p {
+            margin: 0 0 30px 0;
+            font-size: 1.2em;
+            line-height: 1.6;
+            opacity: 0.9;
+        }
+
+        .retry-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .retry-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .status-indicator {
+            margin-top: 30px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            font-size: 0.9em;
+        }
+
+        .connection-status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .online .connection-status {
+            background: #51cf66;
+            animation: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📡</div>
+        <h1>Vous êtes hors ligne</h1>
+        <p>
+            Il semble que vous n'ayez pas de connexion internet.
+            Certaines fonctionnalités de l'application peuvent ne pas être disponibles.
+        </p>
+
+        <button class="retry-button" onclick="retryConnection()">
+            Réessayer la connexion
+        </button>
+
+        <div class="status-indicator">
+            <span class="connection-status" id="statusIndicator"></span>
+            <span id="statusText">Vérification de la connexion...</span>
+        </div>
+    </div>
+
+    <script>
+        // Check connection status
+        function checkConnection() {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            const container = document.querySelector('.offline-container');
+
+            if (navigator.onLine) {
+                statusIndicator.style.background = '#51cf66';
+                statusText.textContent = 'Connexion rétablie ! Redirection...';
+                container.classList.add('online');
+
+                // Redirect back to the app after a short delay
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            } else {
+                statusIndicator.style.background = '#ff6b6b';
+                statusText.textContent = 'Aucune connexion internet détectée';
+                container.classList.remove('online');
+            }
+        }
+
+        // Retry connection
+        function retryConnection() {
+            const statusText = document.getElementById('statusText');
+            statusText.textContent = 'Vérification de la connexion...';
+
+            // Simulate a retry attempt
+            setTimeout(() => {
+                checkConnection();
+            }, 1000);
+        }
+
+        // Listen for online/offline events
+        window.addEventListener('online', () => {
+            checkConnection();
+        });
+
+        window.addEventListener('offline', () => {
+            checkConnection();
+        });
+
+        // Check connection on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            checkConnection();
+
+            // Check connection every 5 seconds
+            setInterval(checkConnection, 5000);
+        });
+    </script>
+</body>
+</html>

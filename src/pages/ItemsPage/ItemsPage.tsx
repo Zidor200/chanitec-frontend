@@ -42,7 +42,7 @@ import {
 import * as XLSX from 'xlsx';
 
 import { SupplyItem } from '../../models/Quote';
-import { itemsApi } from '../../services/api';
+import { enhancedItemsService } from '../../services/enhanced-business-services';
 import './ItemsPage.scss';
 import { v4 as uuidv4 } from 'uuid';
 import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberInput';
@@ -51,6 +51,7 @@ import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberIn
 interface ItemsPageProps {
   currentPath: string;
   onNavigate: (path: string) => void;
+  onLogout?: () => void;
 }
 
 interface ExcelItem {
@@ -119,7 +120,7 @@ interface CellAddress {
   c: number;
 }
 
-const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
+const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate, onLogout }) => {
   // State for items data
   const [items, setItems] = useState<SupplyItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<SupplyItem[]>([]);
@@ -168,7 +169,7 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
   const loadItems = async () => {
     try {
       setLoading(true);
-      const data = await itemsApi.getAllItems();
+      const data = await enhancedItemsService.getAllItems();
 
       // Transform the data to match our frontend structure
       const transformedItems = data.map((item: any) => ({
@@ -273,9 +274,9 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
       };
 
       if (isEditing && currentItem.id) {
-        await itemsApi.updateItem(currentItem.id, itemData);
+        await enhancedItemsService.updateItem(currentItem.id, itemData);
       } else {
-        await itemsApi.createItem(itemData);
+        await enhancedItemsService.createItem(itemData);
       }
 
       showSnackbar(`Article ${isEditing ? 'mis à jour' : 'créé'} avec succès`, 'success');
@@ -293,9 +294,14 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cet article ?')) {
       try {
         setDeletingId(id);
-        await itemsApi.deleteItem(id);
+
+        // Use enhanced service for proper offline sync and local state management
+        await enhancedItemsService.deleteItem(id);
+
+        // Update local state immediately for better UX
         setItems(prevItems => prevItems.filter(item => item.id !== id));
         setFilteredItems(prevItems => prevItems.filter(item => item.id !== id));
+
         showSnackbar('Article supprimé avec succès', 'success');
       } catch (error) {
         showSnackbar('Erreur lors de la suppression de l\'article', 'error');
@@ -345,7 +351,7 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
           };
 
           // Create item using the same API call as handleSaveItem
-          const response = await itemsApi.createItem(itemData);
+          const response = await enhancedItemsService.createItem(itemData);
 
           results.successful.push({
             original: item,
@@ -480,7 +486,7 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
                 };
 
                 // Use the createItemWithCustomId method
-                await itemsApi.createItemWithCustomId(itemData);
+                await enhancedItemsService.createItemWithCustomId(itemData);
                 successCount++;
               } catch (error) {
                 console.error(`Error importing item ${item.id}:`, error);
@@ -521,21 +527,7 @@ const ItemsPage: FC<ItemsPageProps> = ({ currentPath, onNavigate }) => {
   };
 
   return (
-    <Layout currentPath={currentPath} onNavigate={onNavigate} onHomeClick={handleHomeClick}>
-      <Box sx={{ display: 'flex', position: 'relative', width: '100%' , backgroundColor: 'white' , color: 'black',height:'20%'}} className="page-header">
-        <Box sx={{ position: 'absolute', left: 0 }}>
-          <img
-            src={logo}
-            alt="Logo"
-            style={{ height: '60px' }}
-          />
-        </Box>
-        <Box sx={{  }}>
-          <Typography variant="h6" component="h1" className="page-title">
-            ARTICLES
-          </Typography>
-        </Box>
-      </Box>
+    <Layout currentPath={currentPath} onNavigate={onNavigate} onHomeClick={handleHomeClick} onLogout={onLogout}>
 
       <Box className="items-page">
         {/* Header Section */}

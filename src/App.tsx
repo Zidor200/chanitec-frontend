@@ -16,6 +16,9 @@ import InterventionPage from './pages/interventionPage';
 import { storageService } from './services/storage-service';
 import OrgChartPage from './pages/orgChartPage';
 import EmployeesPage from './pages/employeesPage';
+import Phase2Test from './components/Phase2Test';
+import Phase3Test from './components/Phase3Test';
+import OfflineTest from './components/OfflineTest';
 import './App.scss';
 
 const theme = createTheme({
@@ -238,7 +241,7 @@ const AppContent = () => {
               path="/home"
               element={
                 <ProtectedRoute>
-                  <HomePage />
+                  <HomePage currentPath="/home" onNavigate={handleNavigate} onLogout={handleLogout} />
                 </ProtectedRoute>
               }
             />
@@ -262,10 +265,31 @@ const AppContent = () => {
             />
 
             <Route
+              path="/phase2-test"
+              element={
+                <Phase2Test />
+              }
+            />
+
+            <Route
+              path="/phase3-test"
+              element={
+                <Phase3Test />
+              }
+            />
+
+            <Route
+              path="/offline-test"
+              element={
+                <OfflineTest />
+              }
+            />
+
+            <Route
               path="/history"
               element={
                 <ProtectedRoute>
-                  <HistoryPage currentPath="/history" onNavigate={handleNavigate} />
+                  <HistoryPage currentPath="/history" onNavigate={handleNavigate} onLogout={handleLogout} />
                 </ProtectedRoute>
               }
             />
@@ -274,7 +298,7 @@ const AppContent = () => {
               path="/clients"
               element={
                 <ProtectedRoute>
-                  <ClientsPage currentPath="/clients" onNavigate={handleNavigate} />
+                  <ClientsPage currentPath="/clients" onNavigate={handleNavigate} onLogout={handleLogout} />
                 </ProtectedRoute>
               }
             />
@@ -283,7 +307,7 @@ const AppContent = () => {
               path="/items"
               element={
                 <ProtectedRoute>
-                  <ItemsPage currentPath="/items" onNavigate={handleNavigate} />
+                  <ItemsPage currentPath="/items" onNavigate={handleNavigate} onLogout={handleLogout} />
                 </ProtectedRoute>
               }
             />
@@ -296,6 +320,7 @@ const AppContent = () => {
                     currentPath="/price-offer"
                     onNavigate={handleNavigate}
                     quoteId={priceOfferQuoteId}
+                    onLogout={handleLogout}
                   />
                 </ProtectedRoute>
               }
@@ -305,7 +330,7 @@ const AppContent = () => {
               path="/intervention"
               element={
                 <ProtectedRoute>
-                  <InterventionPage />
+                  <InterventionPage currentPath="/intervention" onNavigate={handleNavigate} onLogout={handleLogout} />
                 </ProtectedRoute>
               }
             />
@@ -314,7 +339,7 @@ const AppContent = () => {
               path="/org-chart"
               element={
                 <ProtectedRoute>
-                  <OrgChartPage />
+                  <OrgChartPage currentPath="/org-chart" onNavigate={handleNavigate} onLogout={handleLogout} />
                 </ProtectedRoute>
               }
             />
@@ -323,7 +348,7 @@ const AppContent = () => {
               path="/employees"
               element={
                 <ProtectedRoute>
-                  <EmployeesPage />
+                  <EmployeesPage currentPath="/employees" onNavigate={handleNavigate} onLogout={handleLogout} />
                 </ProtectedRoute>
               }
             />

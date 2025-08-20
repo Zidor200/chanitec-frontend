@@ -38,6 +38,7 @@ import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberIn
 interface HistoryPageProps {
   currentPath: string;
   onNavigate: (path: string, quoteId?: string) => void;
+  onLogout?: () => void;
 }
 
 // Quote Confirmation Modal Component
@@ -54,7 +55,6 @@ const QuoteConfirmationModal: React.FC<QuoteConfirmationModalProps> = ({
   onConfirm,
   onClose
 }) => {
-  const [confirmed, setConfirmed] = useState(false);
   const [numberChanitec, setNumberChanitec] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -62,7 +62,6 @@ const QuoteConfirmationModal: React.FC<QuoteConfirmationModalProps> = ({
   // Reset form when modal opens/closes
   useEffect(() => {
     if (open) {
-      setConfirmed(false);
       setNumberChanitec('');
       setError('');
     }
@@ -72,25 +71,16 @@ const QuoteConfirmationModal: React.FC<QuoteConfirmationModalProps> = ({
     e.preventDefault();
     if (!quote) return;
 
-    if (confirmed && !numberChanitec.trim()) {
-      setError('Le numéro de référence interne est requis pour confirmer le devis.');
+    if (!numberChanitec.trim()) {
+      setError('Le numéro de référence interne est requis.');
       return;
-    }
-
-    // Validate reference number format if provided
-    if (confirmed && numberChanitec.trim()) {
-      const referencePattern = /^CH-\d{4}-\d{3}$/;
-      if (!referencePattern.test(numberChanitec.trim())) {
-        setError('Le format du numéro de référence doit être CH-YYYY-NNN (ex: CH-2024-001)');
-        return;
-      }
     }
 
     setLoading(true);
     setError('');
 
     try {
-      await onConfirm(quote.id, confirmed, numberChanitec.trim());
+      await onConfirm(quote.id, true, numberChanitec.trim());
       onClose();
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la confirmation du devis');
@@ -124,30 +114,15 @@ const QuoteConfirmationModal: React.FC<QuoteConfirmationModalProps> = ({
             </Box>
           )}
 
-          <FormControlLabel
-            control={
-              <Switch
-                checked={confirmed}
-                onChange={(e) => setConfirmed(e.target.checked)}
-                color="primary"
-              />
-            }
-            label="Marquer comme confirmé"
+          <TextField
+            fullWidth
+            label="Numéro de référence interne"
+            value={numberChanitec}
+            onChange={(e) => setNumberChanitec(e.target.value)}
+            placeholder="ex: CH-2024-001"
+            required
             sx={{ mb: 2 }}
           />
-
-          {confirmed && (
-            <TextField
-              fullWidth
-              label="Numéro de référence interne"
-              value={numberChanitec}
-              onChange={(e) => setNumberChanitec(e.target.value)}
-              placeholder="ex: CH-2024-001"
-              required
-              helperText="Format recommandé: CH-YYYY-NNN"
-              sx={{ mb: 2 }}
-            />
-          )}
 
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -173,7 +148,7 @@ const QuoteConfirmationModal: React.FC<QuoteConfirmationModalProps> = ({
   );
 };
 
-const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) => {
+const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate, onLogout }) => {
   // Filter state
   const [filters, setFilters] = useState({
     id: '',
@@ -241,15 +216,21 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
       today.setHours(0, 0, 0, 0);
 
       const passedReminders = (allQuotes || []).filter(quote => {
-        if (!quote.reminderDate) return false;
+        if (!quote.reminderDate || quote.confirmed) return false;
         const reminderDate = new Date(quote.reminderDate);
         reminderDate.setHours(0, 0, 0, 0);
         return reminderDate < today;
       });
 
       if (passedReminders.length > 0) {
-        const quoteIds = passedReminders.map(q => q.id).join(', ');
-        alert(`Attention: Les rappels pour les devis suivants sont passés: ${quoteIds}`);
+        const quoteDetails = passedReminders.map(q => {
+          const creationDate = new Date(q.createdAt).toLocaleDateString('fr-FR');
+          return `• ID: ${q.id} | Client: ${q.clientName} | Site: ${q.siteName} | Objet: ${q.object} | Créé le: ${creationDate}`;
+        }).join('\n');
+
+        alert(`Attention: Les rappels pour les devis suivants sont passés:
+
+${quoteDetails}`);
       }
     };
     fetchData();
@@ -361,15 +342,6 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
   const handleLoadQuote = (quoteId: string) => {
     const quote = quotes.find(q => q.id === quoteId);
     if (quote) {
-      if (quote.reminderDate) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const reminder = new Date(quote.reminderDate);
-        reminder.setHours(0, 0, 0, 0);
-        if (reminder < today) {
-          alert("Attention : la date de rappel de ce devis est dépassée !");
-        }
-      }
       onNavigate(`/quote?id=${quoteId}&showConfirm=true`);
     }
   };
@@ -392,7 +364,8 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
         q.id === quoteId ? {
           ...q,
           confirmed: confirmed,
-          number_chanitec: confirmed ? numberChanitec : q.number_chanitec
+          number_chanitec: confirmed ? numberChanitec : q.number_chanitec,
+          reminderDate: confirmed ? undefined : q.reminderDate
         } : q
       ));
 
@@ -429,7 +402,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
     const currentDate = new Date();
     const reminderDate = new Date(currentDate.setDate(currentDate.getDate() + days));
     const formattedDate = reminderDate.toISOString().split('T')[0];
-    
+
     try {
       const updatedQuote = await apiService.setReminderDate(quoteId, formattedDate);
       setQuotes(prev => prev.map(q => q.id === quoteId ? { ...q, reminderDate: formattedDate } : q));
@@ -441,24 +414,29 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
   };
 
   return (
-    <Layout currentPath={currentPath} onNavigate={onNavigate}>
+    <Layout currentPath={currentPath} onNavigate={onNavigate} onLogout={onLogout}>
       <Container maxWidth="lg" className="history-page">
-        <Box sx={{ display: 'flex', position: 'relative', width: '100%', height: '80px', backgroundColor: 'white', color: 'black' }} className="page-header">
-          <Box sx={{ position: 'absolute', left: 0, display: 'flex', alignItems: 'center', gap: 40 }}>
-          <img
-            src={logo}
-            alt="Logo"
-            style={{ height: '60px' }}
-          />
-          <Typography variant="h6" className="header-title">
-            HISTORIQUE
-          </Typography>
-        </Box>
-         </Box>
+
         <Paper elevation={3} className="filters-section">
-          <Typography variant="h6" gutterBottom>
-            Filtres
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">
+              Filtres
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              size="large"
+              onClick={() => onNavigate('/quote')}
+              sx={{
+                backgroundColor: '#1976d2',
+                '&:hover': {
+                  backgroundColor: '#1565c0'
+                }
+              }}
+            >
+              Créer une nouvelle feuille de calcul
+            </Button>
+          </Box>
 
           <Box className="filters-grid">
             <TextField
@@ -622,6 +600,10 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                           <Typography className="value">{quote.siteName || 'Non spécifié'}</Typography>
                         </Box>
                         <Box className="info-item">
+                          <Typography className="label">Objet</Typography>
+                          <Typography className="value">{quote.object || 'Non spécifié'}</Typography>
+                        </Box>
+                        <Box className="info-item">
                           <Typography className="label">Date</Typography>
                           <Typography className="value">{new Date(quote.date).toLocaleDateString('fr-FR')}</Typography>
                         </Box>
@@ -665,7 +647,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ currentPath, onNavigate }) =>
                       <Button className="action-button view" size="small" startIcon={<VisibilityIcon />} onClick={() => handleLoadQuote(quote.id)}>
                         Voir
                       </Button>
-                      {!quote.confirmed && (
+                      {!quote.confirmed && isLatest && (
                         <Button
                           className="action-button"
                           size="small"

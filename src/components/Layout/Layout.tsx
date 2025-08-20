@@ -1,14 +1,32 @@
-import React, { ReactNode } from 'react';
-import { AppBar, Box, Container, Toolbar, Typography, CssBaseline, Button } from '@mui/material';
+import React, { ReactNode, useState } from 'react';
+import {
+  AppBar,
+  Box,
+  Toolbar,
+  Typography,
+  CssBaseline,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  IconButton,
+  useTheme,
+  useMediaQuery
+} from '@mui/material';
 import {
   HomeOutlined,
   HistoryOutlined,
   PeopleOutlineOutlined,
   InventoryOutlined,
   Menu,
-  Logout
+  Logout,
+  AssignmentOutlined,
+  BusinessOutlined,
+  GroupOutlined
 } from '@mui/icons-material';
-import logo from '../../logo.png'; // Import the logo from src directory
+import logo from '../../assets/logo512.png';
 import './Layout.scss';
 
 interface LayoutProps {
@@ -26,12 +44,19 @@ const Layout: React.FC<LayoutProps> = ({
   onHomeClick,
   onLogout
 }) => {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
   // Navigation items
   const navItems = [
-    { path: '/quote', label: 'Accueil', icon: <HomeOutlined /> },
+    { path: '/home', label: 'Accueil', icon: <HomeOutlined /> },
     { path: '/history', label: 'Historique', icon: <HistoryOutlined /> },
     { path: '/clients', label: 'Clients', icon: <PeopleOutlineOutlined /> },
-    { path: '/items', label: 'Gérer les articles', icon: <InventoryOutlined /> }
+    { path: '/items', label: 'Gérer les articles', icon: <InventoryOutlined /> },
+    { path: '/intervention', label: 'Intervention', icon: <AssignmentOutlined /> },
+    { path: '/org-chart', label: 'Organigramme', icon: <BusinessOutlined /> },
+    { path: '/employees', label: 'Employés', icon: <GroupOutlined /> }
   ];
 
   const handleNavigate = (path: string) => {
@@ -41,57 +66,143 @@ const Layout: React.FC<LayoutProps> = ({
     if (onNavigate) {
       onNavigate(path);
     }
+    // Close mobile drawer after navigation
+    if (isMobile) {
+      setMobileOpen(false);
+    }
   };
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
+  const drawerContent = (
+    <>
+      {/* Sidebar Header - Only show logo on desktop */}
+      {!isMobile && (
+        <Box className="sidebar-header">
+          <img src={logo} alt="Chanitec Logo" className="sidebar-logo" />
+        </Box>
+      )}
+
+      <Box className="sidebar-content">
+        <List className="sidebar-menu">
+          {navItems.map((item) => (
+            <ListItem
+              key={item.path}
+              className={`sidebar-menu-item ${currentPath === item.path ? 'active' : ''}`}
+              onClick={() => handleNavigate(item.path)}
+            >
+              <ListItemIcon className="menu-item-icon">
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText
+                primary={item.label}
+                className="menu-item-text"
+              />
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+
+      <Box className="sidebar-footer">
+        <Divider className="sidebar-divider" />
+        <ListItem
+          className="sidebar-menu-item logout-item"
+          onClick={onLogout}
+          sx={{ cursor: 'pointer' }}
+        >
+          <ListItemIcon className="menu-item-icon">
+            <Logout />
+          </ListItemIcon>
+          <ListItemText
+            primary="Déconnexion"
+            className="menu-item-text"
+          />
+        </ListItem>
+      </Box>
+    </>
+  );
 
   return (
     <Box className="layout-root">
       <CssBaseline />
-      <AppBar position="static" color="primary" className="app-bar">
-        <Toolbar>
-          <Box className="toolbar-content">
-            <Button
+
+      {/* Mobile App Bar */}
+      {isMobile && (
+        <AppBar
+          position="fixed"
+          className="mobile-app-bar"
+          sx={{
+            zIndex: theme.zIndex.drawer + 1,
+            display: { xs: 'flex', md: 'none' }
+          }}
+        >
+          <Toolbar>
+            <IconButton
               color="inherit"
-              className="main-menu-button"
-              startIcon={<Menu />}
-              onClick={() => handleNavigate('/home')}
+              aria-label="open drawer"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2 }}
             >
-              Menu Principal
-            </Button>
-            <Box className="nav-links">
-              {(navItems ?? []).map((item) => (
-                <Button
-                  key={item.path}
-                  color="inherit"
-                  className={`nav-button ${currentPath === item.path ? 'active' : ''}`}
-                  startIcon={item.icon}
-                  onClick={() => handleNavigate(item.path)}
-                >
-                  {item.label}
-                </Button>
-              ))}
-            </Box>
-            {onLogout && (
-              <Button
-                color="inherit"
-                className="logout-button"
-                startIcon={<Logout />}
-                onClick={onLogout}
-              >
-                Déconnexion
-              </Button>
-            )}
-          </Box>
-        </Toolbar>
-      </AppBar>
+              <Menu />
+            </IconButton>
+            <Typography variant="h6" noWrap component="div">
+              Chanitec
+            </Typography>
+          </Toolbar>
+        </AppBar>
+      )}
 
-      <Container component="main" className="main-content">
-        {children}
-      </Container>
+      {/* Mobile Drawer */}
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{
+          keepMounted: true, // Better open performance on mobile
+        }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: 280,
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100vh'
+          },
+        }}
+        className="mobile-sidebar"
+      >
+        {drawerContent}
+      </Drawer>
 
-      <Box component="footer" className="footer">
-        <Typography variant="body2" color="textSecondary" align="center">
-          © {new Date().getFullYear()} Chanitec
-        </Typography>
+      {/* Desktop Sidebar */}
+      <Drawer
+        variant="permanent"
+        className="dashboard-sidebar"
+        classes={{
+          paper: 'sidebar-paper'
+        }}
+        sx={{
+          display: { xs: 'none', md: 'block' },
+          '& .MuiDrawer-paper': {
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100vh'
+          }
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+
+      {/* Main Content */}
+      <Box className={`dashboard-main ${isMobile ? 'mobile-main' : ''}`}>
+        {isMobile && <Box className="mobile-toolbar-spacer" />}
+        <Box className="dashboard-content">
+          {children}
+        </Box>
       </Box>
     </Box>
   );

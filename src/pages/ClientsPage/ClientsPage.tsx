@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-
+import React, { useState, useEffect, useCallback } from 'react';
 import logo from '../../logo.png';
 import {
   Box,
@@ -36,7 +35,9 @@ import {
   Alert,
   Menu,
   MenuItem,
-  ListItemIcon
+  ListItemIcon,
+  InputAdornment,
+  Grid
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -46,28 +47,35 @@ import {
   Place as PlaceIcon,
   KeyboardArrowDown as KeyboardArrowDownIcon,
   KeyboardArrowUp as KeyboardArrowUpIcon,
-  MoreVert as MoreVertIcon
+  MoreVert as MoreVertIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon,
+  Business as BusinessIcon,
+  AcUnit as AcUnitIcon
 } from '@mui/icons-material';
 import Layout from '../../components/Layout/Layout';
-import { Client, Site, Split } from '../../models/Quote'; // <-- Import Split here
+import { Client, Site, Split } from '../../models/Quote';
 import { apiService } from '../../services/api-service';
-import { generateClientId } from '../../utils/id-generator';
+import { generateId } from '../../utils/id-generator';
 import CustomNumberInput from '../../components/CustomNumberInput/CustomNumberInput';
 import './ClientsPage.scss';
+import { enhancedClientService, enhancedSiteService } from '../../services/enhanced-business-services';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 interface ClientsPageProps {
   currentPath: string;
   onNavigate: (path: string) => void;
+  onLogout?: () => void;
 }
 
 
-const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) => {
+const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate, onLogout }) => {
   // State for clients data
   const [clients, setClients] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSite, setSelectedSite] = useState('all');
   const [loading, setLoading] = useState(false);
 
   // State for dialog
@@ -102,37 +110,61 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
     loadClients();
   }, []);
 
-  // Load all clients with their sites
+  // Filter clients when search term changes
+  useEffect(() => {
+    filterClients();
+  }, [searchTerm, selectedSite, clients]);
+
+  // Filter clients based on search term and site filter
+  const filterClients = () => {
+    let filtered = [...clients];
+
+    // Search filter
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(client =>
+        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.id.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Site filter
+    if (selectedSite !== 'all') {
+      filtered = filtered.filter(client =>
+        client.sites?.some(site => site.id === selectedSite)
+      );
+    }
+
+    setFilteredClients(filtered);
+  };
+
+  // Get all unique sites for the dropdown
+  const getAllSites = () => {
+    const allSites: { id: string; name: string }[] = [];
+    clients.forEach(client => {
+      client.sites?.forEach(site => {
+        if (!allSites.find(s => s.id === site.id)) {
+          allSites.push({ id: site.id, name: site.name });
+        }
+      });
+    });
+    return allSites;
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedSite('all');
+  };
+
+  // Load all clients with their sites from enhanced storage (works offline)
   const loadClients = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/clients`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch clients');
-      }
-      const clientsData = await response.json();
+      const clientsData = await enhancedClientService.getAllClients();
 
-      // Fetch sites for each client
-      const clientsWithSites = await Promise.all(
-        clientsData.map(async (client: { id: string; name: string }) => {
-          const sitesResponse = await fetch(`${API_BASE_URL}/sites/by-client?clientId=${client.id}`);
-          const sites = sitesResponse.ok ? await sitesResponse.json() : [];
-
-          // Fetch splits for each site
-          const sitesWithSplits = await Promise.all(
-            sites.map(async (site: Site) => {
-              const splitsResponse = await fetch(`${API_BASE_URL}/splits/by-site/${site.id}`);
-              const splits = splitsResponse.ok ? await splitsResponse.json() : [];
-              return { ...site, splits };
-            })
-          );
-
-          return { ...client, sites: sitesWithSplits };
-        })
-      );
-
-      setClients(clientsWithSites);
-      setFilteredClients(clientsWithSites);
+      // Enhanced storage already includes sites and splits
+      setClients(clientsData);
+      setFilteredClients(clientsData);
     } catch (error) {
       console.error('Error loading clients:', error);
       showSnackbar('Erreur lors du chargement des clients', 'error');
@@ -205,76 +237,41 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
 
   // Renamed function for creating a NEW client and its first site
   const handleCreateClientAndSite = async () => {
-    if (!currentClient.name?.trim()) {
-      showSnackbar('Le nom du client est requis', 'error');
-      return;
-    }
-
-    // Check if we have sites added or if we need to use the newSiteName
-    const hasSites = (currentClient.sites?.length || 0) > 0;
-    const siteNameToUse = hasSites ? currentClient.sites![0].name : newSiteName.trim();
-
-    if (!siteNameToUse) {
-      showSnackbar('Le nom du site est requis', 'error');
+    if (!currentClient?.name?.trim() || !newSiteName?.trim()) {
+      showSnackbar('Le nom du client et du site sont requis', 'error');
       return;
     }
 
     try {
       setLoading(true);
 
-      // 1. Create client first
-      const clientResponse = await fetch(`${API_BASE_URL}/clients`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: currentClient.name.trim(),
-          Taux_marge: currentClient.Taux_marge || 0
-        })
+      // 1. Create client using enhanced service (works offline)
+      const newClient = await enhancedClientService.createClient({
+        name: currentClient.name.trim(),
+        Taux_marge: currentClient.Taux_marge || 0
       });
 
-      if (!clientResponse.ok) {
-        throw new Error('Failed to create client');
-      }
-
-      const newClient = await clientResponse.json();
-
-      // 2. Create the site with the new client's ID
-      const siteResponse = await fetch(`${API_BASE_URL}/sites`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: siteNameToUse,
-          client_id: newClient.id
-        })
+      // 2. Create site using enhanced service (works offline)
+      const newSite = await enhancedSiteService.createSite({
+        name: newSiteName.trim(),
+        client_id: newClient.id
       });
 
-      if (!siteResponse.ok) {
-        await fetch(`${API_BASE_URL}/clients/${newClient.id}`, { method: 'DELETE' });
-        throw new Error('Failed to create site');
-      }
-
-      // After site creation:
-      const newSite = await siteResponse.json();
-
-      // Create splits for this site
+      // 3. Create splits for this site (if any)
       const splits = (currentClient.sites?.[0]?.splits ?? []);
-      await Promise.all(splits.map(split =>
-        fetch(`${API_BASE_URL}/splits`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code: split.Code,
-            name: split.name,
-            description: split.description,
-            puissance: split.puissance,
-            site_id: newSite.id // <-- use site_id, not site
-          })
-        })
-      ));
+      if (splits.length > 0) {
+        // Note: Splits will be synced when the site syncs
+        // For now, we'll store them locally with the site
+        const siteWithSplits = {
+          ...newSite,
+          splits: splits.map(split => ({
+            ...split,
+            id: generateId(),
+            site_id: newSite.id
+          }))
+        };
+        await enhancedSiteService.updateSite(newSite.id, siteWithSplits);
+      }
 
       showSnackbar('Client et site créés avec succès', 'success');
       handleCloseDialog();
@@ -302,21 +299,13 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
 
     setLoading(true);
     try {
-      // 1. Update Client Name
-      const clientUpdateResponse = await fetch(`${API_BASE_URL}/clients/${currentClient.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: currentClient.name.trim(),
-          Taux_marge: currentClient.Taux_marge || 0
-        })
+      // 1. Update Client using enhanced service (works offline)
+      await enhancedClientService.updateClient(currentClient.id, {
+        name: currentClient.name.trim(),
+        Taux_marge: currentClient.Taux_marge || 0
       });
 
-      if (!clientUpdateResponse.ok) {
-        throw new Error('Failed to update client name');
-      }
-
-      // 2. Manage Sites (Add new, Delete removed)
+      // 2. Manage Sites (Add new, Delete removed, Update existing)
       const currentSites = currentClient.sites || [];
       const originalSites = originalClientSites;
 
@@ -325,76 +314,32 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
       const sitesToUpdate = currentSites.filter(cs => originalSites.some(os => os.id === cs.id));
 
       // Add new sites
-      const addedSitesResponses = await Promise.all(sitesToAdd.map(site =>
-        fetch(`${API_BASE_URL}/sites`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: site.name, client_id: currentClient.id })
-        })
-      ));
-
-      // Get new site IDs for splits
-      const addedSites = await Promise.all(addedSitesResponses.map(async (res, idx) => {
-        if (!res.ok) throw new Error('Failed to add site');
-        return await res.json();
-      }));
-
-      // Create splits for newly added sites
-      await Promise.all(addedSites.map((site, idx) =>
-        Promise.all((sitesToAdd[idx].splits ?? []).map(split =>
-          fetch(`${API_BASE_URL}/splits`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              code: split.Code,
-              name: split.name,
-              description: split.description,
-              puissance: split.puissance,
-              site_id: site.id
-            })
-          })
-        ))
-      ));
-
-      // Always use POST for splits of updated sites
-      await Promise.all(sitesToUpdate.map(site =>
-        Promise.all((site.splits ?? []).map(split =>
-          fetch(`${API_BASE_URL}/splits`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              code: split.Code,
-              name: split.name,
-              description: split.description,
-              puissance: split.puissance,
-              site_id: site.id
-            })
-          })
-        ))
-      ));
+      for (const site of sitesToAdd) {
+        await enhancedSiteService.createSite({
+          name: site.name,
+          client_id: currentClient.id
+        });
+      }
 
       // Delete removed sites
-      await Promise.all(sitesToDelete.map(site =>
-        fetch(`${API_BASE_URL}/sites/${site.id}`, {
-          method: 'DELETE'
-        })
-      ));
+      for (const site of sitesToDelete) {
+        await enhancedSiteService.deleteSite(site.id);
+      }
 
-      // Delete removed splits
-      await Promise.all(deletedSplits.map(code =>
-        fetch(`${API_BASE_URL}/splits/${code}`, {
-          method: 'DELETE'
-        })
-      ));
+      // Update existing sites
+      for (const site of sitesToUpdate) {
+        await enhancedSiteService.updateSite(site.id, {
+          name: site.name,
+          client_id: currentClient.id
+        });
+      }
 
-      showSnackbar('Client mis à jour avec succès', 'success');
+      showSnackbar('Client et sites mis à jour avec succès', 'success');
       handleCloseDialog();
       await loadClients();
-      setDeletedSplits([]); // Reset after update
-
     } catch (error) {
       console.error('Error updating client and sites:', error);
-      showSnackbar('Erreur lors de la mise à jour du client', 'error');
+      showSnackbar('Erreur lors de la mise à jour du client et des sites', 'error');
     } finally {
       setLoading(false);
     }
@@ -448,10 +393,17 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
   const handleDeleteClient = async (client: Client) => {
     try {
       setLoading(true);
-      await fetch(`${API_BASE_URL}/clients/${client.id}`, {
-        method: 'DELETE'
-      });
+
+      // Use enhanced business service for proper offline sync and local state management
+      await enhancedClientService.deleteClient(client.id);
+
+      // Update local state immediately for better UX
+      setClients(prevClients => prevClients.filter(c => c.id !== client.id));
+      setFilteredClients(prevFiltered => prevFiltered.filter(c => c.id !== client.id));
+
       showSnackbar('Client supprimé avec succès', 'success');
+
+      // Also reload clients to ensure sync with any other changes
       await loadClients();
     } catch (error) {
       console.error('Error deleting client:', error);
@@ -463,158 +415,182 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ currentPath, onNavigate }) =>
   };
 
   return (
-    <Layout currentPath={currentPath} onNavigate={onNavigate}>
-        <Box sx={{ display: 'flex', position: 'relative', width: '100%',height: '80px', backgroundColor: '#1976d2' , color: 'white'}} className="page-header">
-        <Box sx={{ position: 'absolute', left: 0 , display: 'flex', alignItems: 'center',gap: 25 }}>
-          <img
-            src={logo}
-            alt="Logo"
-            style={{ height: '60px' }}
-          />
-          <Typography variant="h6" className="header-title">
-            Clients et Sites
-          </Typography>
+    <Layout currentPath={currentPath} onNavigate={onNavigate} onLogout={onLogout}>
+      <Box className="clients-page">
+        {/* Header Section */}
+        <Box className="page-header">
+          <Container maxWidth="lg">
+            <Box className="header-content">
+              <Box className="header-left">
+                <Typography variant="h4" className="page-title">
+                  Clients
+                </Typography>
+              </Box>
+              <Box className="header-actions">
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddClient}
+                  disabled={loading}
+                  className="create-client-btn"
+                >
+                  + Create Client
+                </Button>
+              </Box>
+            </Box>
+          </Container>
         </Box>
-         </Box>
 
-      <Container maxWidth="lg" sx={{ mb: 4 }}>
-        <Paper sx={{ p: 3, borderRadius: 2 }}>
-          <Box sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 3
-          }}>
-            <Typography variant="h6">
-              CLIENTS ET SITES
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                placeholder="Rechercher un client"
-                size="small"
-                sx={{
-                  width: 250,
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 1
-                  }
-                }}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        <Container maxWidth="lg" className="main-content">
+          {/* Filter Section */}
+          <Box className="filter-section">
+            <Box className="filter-content">
+              <Box className="filter-left">
+                <TextField
+                  label="Client Name"
+                  placeholder="e.g., SNEL"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  variant="outlined"
+                  size="small"
+                  className="client-name-input"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <TextField
+                  select
+                  label="Site"
+                  value={selectedSite}
+                  onChange={(e) => setSelectedSite(e.target.value)}
+                  variant="outlined"
+                  size="small"
+                  className="site-filter"
+                >
+                  <MenuItem value="all">All sites</MenuItem>
+                  {getAllSites().map((site) => (
+                    <MenuItem key={site.id} value={site.id}>
+                      {site.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
               <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleAddClient}
-                disabled={loading}
-                sx={{
-                  bgcolor: '#1976d2',
-                  '&:hover': { bgcolor: '#1565c0' }
-                }}
+                variant="outlined"
+                size="small"
+                startIcon={<ClearIcon />}
+                onClick={clearFilters}
+                className="clear-filters-btn"
               >
-                Nouveau Client
+                Clear Filters
               </Button>
             </Box>
           </Box>
 
-          <Box sx={{ mt: 2 }}>
+          {/* Clients Cards Section */}
+          <Box className="clients-cards-section">
             {loading ? (
-              <Box sx={{ textAlign: 'center', py: 3 }}>
-                Chargement...
+              <Box className="loading-container">
+                <Typography>Chargement...</Typography>
               </Box>
             ) : filteredClients.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 3 }}>
-                Aucun client trouvé
+              <Box className="empty-container">
+                <Typography>Aucun client trouvé</Typography>
               </Box>
             ) : (
               filteredClients.map((client) => (
-                <Paper
-                  key={client.id}
-                  elevation={1}
-                  sx={{
-                    mb: 2,
-                    overflow: 'hidden',
-                    border: '1px solid #e0e0e0'
-                  }}
-                >
-                  <Box sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    p: 2,
-                    '&:hover': { bgcolor: '#f5f5f5' }
-                  }}>
-                    <Box>
-                      <Typography>
-                        {client.name} <Typography component="span" color="text.secondary">#{client.id}</Typography>
+                <Box key={client.id} className="client-card">
+                  {/* Client Header */}
+                  <Box
+                    className={`client-header ${expandedClient === client.id ? 'expanded' : 'collapsed'}`}
+                    onClick={() => setExpandedClient(expandedClient === client.id ? null : client.id)}
+                  >
+                    <Box className="client-header-left">
+                      <Typography className="client-title">
+                        Client: {client.name} ({client.sites?.length || 0} sites)
                       </Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <IconButton
-                        size="small"
-                        onClick={() => setExpandedClient(expandedClient === client.id ? null : client.id)}
-                      >
+                    <Box className="client-header-right">
+                      <Typography className="margin-rate">
+                        Taux de marge: {client.Taux_marge || 0}%
+                      </Typography>
+                      <IconButton className="expand-icon">
                         {expandedClient === client.id ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuClick(e, client)}
-                      >
-                        <MoreVertIcon />
                       </IconButton>
                     </Box>
                   </Box>
+
+                  {/* Client Content */}
                   <Collapse in={expandedClient === client.id}>
-                    <Box sx={{ px: 2, pb: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                        <Typography variant="subtitle2" color="text.secondary">
-                          Sites ({client.sites?.length || 0})
-                        </Typography>
+                    <Box className="client-content">
+                      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+                        {client.sites?.map((site) => (
+                          <Box key={site.id}>
+                            <Card className="site-card">
+                              <CardContent>
+                                <Box className="site-header">
+                                  <BusinessIcon className="site-icon" />
+                                  <Typography className="site-title">
+                                    Site: {site.name}
+                                  </Typography>
+                                </Box>
+
+                                                                 <Box className="splits-section">
+                                   {site.splits && site.splits.length > 0 ? (
+                                     site.splits.map((split, splitIdx) => (
+                                       <Box key={splitIdx} className="split-item">
+                                         <Box className="split-info">
+                                           <AcUnitIcon className="split-icon" />
+                                           <Typography className="split-text">
+                                             {split.Code || 'N/A'} - {split.name || 'N/A'} - {split.puissance || 0} BTU/KW
+                                           </Typography>
+                                         </Box>
+                                       </Box>
+                                     ))
+                                   ) : (
+                                     <Typography className="no-splits">
+                                       Aucun équipement frigorifique
+                                     </Typography>
+                                   )}
+                                 </Box>
+                               </CardContent>
+                             </Card>
+                           </Box>
+                         ))}
+                       </Box>
+
+                      {/* Client Actions */}
+                      <Box className="client-actions">
+                        <Button
+                          variant="outlined"
+                          onClick={() => handleEditClient(client)}
+                          className="edit-client-btn"
+                        >
+                          Edit Client
+                        </Button>
+                        <Button
+                          variant="contained"
+                          color="error"
+                          startIcon={<DeleteIcon />}
+                          onClick={() => handleDeleteClient(client)}
+                          className="delete-client-btn"
+                        >
+                          Delete Client
+                        </Button>
                       </Box>
-                      {client.sites?.map((site) => (
-                        <React.Fragment key={site.id}>
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              p: 1,
-                              borderRadius: 1,
-                              '&:hover': { bgcolor: '#f5f5f5' }
-                            }}
-                          >
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <PlaceIcon fontSize="small" color="action" />
-                              <Typography>{site.name}</Typography>
-                            </Box>
-                          </Box>
-                          {/* Splits rendering must be inside the map block */}
-                          {site.splits && site.splits.length > 0 && (
-                            <Box sx={{ pl: 5, pb: 1 }}>
-                              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                                Équipement frigorifique:
-                              </Typography>
-                              <List dense>
-                                {site.splits.map((split, splitIdx) => (
-                                  <ListItem key={splitIdx} sx={{ pl: 0 }}>
-                                    <ListItemText
-                                      primary={`${split.Code || '-'} : ${split.name || '-'} ${split.description|| '  '} ${split.puissance ?? '-'} btu/Kw`}
-                                      secondary={split.description}
-                                    />
-                                  </ListItem>
-                                ))}
-                              </List>
-                            </Box>
-                          )}
-                        </React.Fragment>
-                      ))}
                     </Box>
                   </Collapse>
-                </Paper>
+                </Box>
               ))
-           ) }
+            )}
           </Box>
-        </Paper>
-      </Container>
+        </Container>
+      </Box>
 
       <Menu
         anchorEl={anchorEl}

@@ -29,9 +29,10 @@ interface PriceOfferPageProps {
   currentPath: string;
   onNavigate: (path: string, quoteId?: string) => void;
   quoteId?: string;
+  onLogout?: () => void;
 }
 
-const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate, quoteId }) => {
+const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate, quoteId, onLogout }) => {
   const [priceOffer, setPriceOffer] = useState<PriceOffer | null>(null);
   const [numberToDisplay, setNumberToDisplay] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -153,7 +154,7 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
 
   if (error) {
     return (
-      <Layout currentPath={currentPath} onNavigate={onNavigate}>
+      <Layout currentPath={currentPath} onNavigate={onNavigate} onLogout={onLogout}>
         <Box className="error-container">
           <Typography variant="h6" color="error">
             {error}
@@ -172,7 +173,7 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
 
   if (!priceOffer) {
     return (
-      <Layout currentPath={currentPath} onNavigate={onNavigate}>
+      <Layout currentPath={currentPath} onNavigate={onNavigate} onLogout={onLogout}>
         <Box className="loading-container">
           <Typography variant="h6">Chargement...</Typography>
         </Box>
@@ -181,7 +182,7 @@ const PriceOfferPage: React.FC<PriceOfferPageProps> = ({ currentPath, onNavigate
   }
 
   return (
-    <Layout currentPath={currentPath} onNavigate={onNavigate}>
+    <Layout currentPath={currentPath} onNavigate={onNavigate} onLogout={onLogout}>
       <Container maxWidth="lg" className="price-offer-page">
 
 
